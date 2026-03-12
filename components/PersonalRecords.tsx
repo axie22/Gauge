@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PersonalRecord } from '@/lib/hevy';
+import { useUnits } from '@/lib/units';
 
 interface Props {
   records: PersonalRecord[];
@@ -14,6 +15,7 @@ const PAGE_SIZE = 5;
 export function PersonalRecords({ records }: Props) {
   const [sort, setSort] = useState<SortMode>('weight');
   const [page, setPage] = useState(0);
+  const { fmtWeight } = useUnits();
 
   const recentCount = records.filter((r) => r.is_recent).length;
 
@@ -42,7 +44,7 @@ export function PersonalRecords({ records }: Props) {
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-500 mt-0.5">Best weight lifted per exercise</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Best weight lifted per exercise (top 20)</p>
         </div>
         <div className="flex rounded-lg border border-zinc-700 overflow-hidden text-xs shrink-0">
           {(['weight', 'recent'] as SortMode[]).map((mode) => (
@@ -86,7 +88,7 @@ export function PersonalRecords({ records }: Props) {
                     </span>
                   )}
                   <span className="text-sm font-bold text-zinc-100 tabular-nums">
-                    {pr.best_weight_kg.toFixed(1)} kg
+                    {fmtWeight(pr.best_weight_kg)}
                   </span>
                 </div>
               </div>

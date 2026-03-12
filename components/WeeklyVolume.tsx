@@ -13,6 +13,7 @@ import {
   Cell,
 } from 'recharts';
 import { WeeklyVolumePoint } from '@/lib/hevy';
+import { useUnits } from '@/lib/units';
 
 interface Props {
   data: WeeklyVolumePoint[];
@@ -23,44 +24,49 @@ type TooltipProps = {
   payload?: { payload: WeeklyVolumePoint }[];
 };
 
-const CustomTooltip = ({ active, payload }: TooltipProps) => {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  const start = new Date(d.week + 'T12:00:00Z');
-  const end = new Date(d.week + 'T12:00:00Z');
-  end.setUTCDate(end.getUTCDate() + 6);
-  const fmt = (date: Date) =>
-    date.toLocaleString('default', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-  return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-xs shadow-xl">
-      <div className="font-medium text-zinc-200 mb-1">
-        {fmt(start)} – {fmt(end)}
-        {d.is_current && <span className="ml-1.5 text-indigo-400">(this week)</span>}
-      </div>
-      <div className="text-zinc-400">
-        Volume:{' '}
-        <span className="text-zinc-200 font-medium">
-          {Math.round(d.volume_kg).toLocaleString()} kg
-        </span>
-      </div>
-      <div className="text-zinc-400">
-        Sessions: <span className="text-zinc-200">{d.workout_count}</span>
-      </div>
-    </div>
-  );
-};
+function WeeklyVolumeInner({ data }: Props) {
+  const { toDisplay, fmtVolume, unit } = useUnits();
 
-export function WeeklyVolume({ data }: Props) {
-  const avgVolume = useMemo(() => {
+  const avgVolumeKg = useMemo(() => {
     const completed = data.filter((d) => !d.is_current && d.volume_kg > 0);
     if (completed.length === 0) return 0;
     return completed.reduce((s, d) => s + d.volume_kg, 0) / completed.length;
   }, [data]);
 
-  const avgLabel =
-    avgVolume >= 1000
-      ? `${(avgVolume / 1000).toFixed(1)}k`
-      : Math.round(avgVolume).toString();
+  const chartData = useMemo(
+    () => data.map((d) => ({ ...d, display: toDisplay(d.volume_kg) })),
+    [data, toDisplay]
+  );
+
+  const avgDisplay = toDisplay(avgVolumeKg);
+  const avgLabel = avgDisplay >= 1000
+    ? `${(avgDisplay / 1000).toFixed(1)}k`
+    : Math.round(avgDisplay).toString();
+
+  const CustomTooltip = ({ active, payload }: TooltipProps) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    const start = new Date(d.week + 'T12:00:00Z');
+    const end = new Date(d.week + 'T12:00:00Z');
+    end.setUTCDate(end.getUTCDate() + 6);
+    const fmt = (date: Date) =>
+      date.toLocaleString('default', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    return (
+      <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-xs shadow-xl">
+        <div className="font-medium text-zinc-200 mb-1">
+          {fmt(start)} – {fmt(end)}
+          {d.is_current && <span className="ml-1.5 text-indigo-400">(this week)</span>}
+        </div>
+        <div className="text-zinc-400">
+          Volume:{' '}
+          <span className="text-zinc-200 font-medium">{fmtVolume(d.volume_kg)}</span>
+        </div>
+        <div className="text-zinc-400">
+          Sessions: <span className="text-zinc-200">{d.workout_count}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 h-full">
@@ -73,12 +79,12 @@ export function WeeklyVolume({ data }: Props) {
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-zinc-100 tabular-nums">{avgLabel}</div>
-          <div className="text-xs text-zinc-500">avg kg/week</div>
+          <div className="text-xs text-zinc-500">avg {unit}/week</div>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} margin={{ top: 8, right: 24, left: -16, bottom: 0 }}>
+        <BarChart data={chartData} margin={{ top: 8, right: 24, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
           <XAxis
             dataKey="week"
@@ -103,9 +109,9 @@ export function WeeklyVolume({ data }: Props) {
             }
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: '#27272a' }} />
-          {avgVolume > 0 && (
+          {avgDisplay > 0 && (
             <ReferenceLine
-              y={avgVolume}
+              y={avgDisplay}
               stroke="#52525b"
               strokeDasharray="4 2"
               label={{
@@ -116,8 +122,8 @@ export function WeeklyVolume({ data }: Props) {
               }}
             />
           )}
-          <Bar dataKey="volume_kg" radius={[3, 3, 0, 0]}>
-            {data.map((entry, i) => (
+          <Bar dataKey="display" radius={[3, 3, 0, 0]}>
+            {chartData.map((entry, i) => (
               <Cell
                 key={i}
                 fill={entry.is_current ? '#6366f1' : '#22c55e'}
@@ -129,4 +135,8 @@ export function WeeklyVolume({ data }: Props) {
       </ResponsiveContainer>
     </div>
   );
+}
+
+export function WeeklyVolume({ data }: Props) {
+  return <WeeklyVolumeInner data={data} />;
 }

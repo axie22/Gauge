@@ -11,6 +11,7 @@ import {
 import { EnrichedWorkout, BalanceResult } from '@/lib/hevy';
 import { analyzeBalance } from '@/lib/analytics';
 import { DangerBadge } from './DangerBadge';
+import { useUnits } from '@/lib/units';
 
 interface Props {
   workouts: EnrichedWorkout[];
@@ -69,6 +70,7 @@ function RatioGauge({
 
 export function BalanceAnalyzer({ workouts, initialBalance }: Props) {
   const [period, setPeriod] = useState<Period>(30);
+  const { fmtVolume } = useUnits();
 
   const balance = useMemo(() => {
     if (period === initialBalance.period_days) return initialBalance;
@@ -127,19 +129,19 @@ export function BalanceAnalyzer({ workouts, initialBalance }: Props) {
           <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-500">
             <div className="rounded-lg bg-zinc-800/50 p-2">
               <div className="text-zinc-400 font-medium">Push</div>
-              <div className="text-zinc-200">{Math.round(balance.push_volume).toLocaleString()} kg</div>
+              <div className="text-zinc-200">{fmtVolume(balance.push_volume)}</div>
             </div>
             <div className="rounded-lg bg-zinc-800/50 p-2">
               <div className="text-zinc-400 font-medium">Pull</div>
-              <div className="text-zinc-200">{Math.round(balance.pull_volume).toLocaleString()} kg</div>
+              <div className="text-zinc-200">{fmtVolume(balance.pull_volume)}</div>
             </div>
             <div className="rounded-lg bg-zinc-800/50 p-2">
               <div className="text-zinc-400 font-medium">Quad</div>
-              <div className="text-zinc-200">{Math.round(balance.quad_volume).toLocaleString()} kg</div>
+              <div className="text-zinc-200">{fmtVolume(balance.quad_volume)}</div>
             </div>
             <div className="rounded-lg bg-zinc-800/50 p-2">
               <div className="text-zinc-400 font-medium">Hip / Posterior</div>
-              <div className="text-zinc-200">{Math.round(balance.hip_volume).toLocaleString()} kg</div>
+              <div className="text-zinc-200">{fmtVolume(balance.hip_volume)}</div>
             </div>
           </div>
 
