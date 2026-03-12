@@ -139,6 +139,21 @@ export interface HeatmapDay {
   workout_count: number;
 }
 
+export interface WeeklyVolumePoint {
+  week: string;          // YYYY-MM-DD, always a Monday (UTC)
+  volume_kg: number;
+  workout_count: number;
+  is_current: boolean;   // true if this week contains today
+}
+
+export interface PersonalRecord {
+  exercise_template_id: string;
+  exercise_title: string;
+  best_weight_kg: number;
+  best_date: string;     // YYYY-MM-DD when PR was set
+  is_recent: boolean;    // true if best_date is within last 30 days
+}
+
 // ─── Muscle Group Normalization ──────────────────────────────────────────────
 
 const MUSCLE_ALIASES: Record<string, string> = {
