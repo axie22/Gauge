@@ -14,6 +14,7 @@ import {
   computeConsistencyScore,
 } from '@/lib/analytics';
 import { summarizeWorkouts } from '@/lib/summarize';
+import { readNutritionLogServer, summarizeNutrition } from '@/lib/nutrition-server';
 import { ConsistencyHeatmap } from '@/components/ConsistencyHeatmap';
 import { MuscleReadinessChart } from '@/components/MuscleReadinessChart';
 import { PlateauCards } from '@/components/PlateauCards';
@@ -48,7 +49,9 @@ export default async function DashboardPage() {
   const overload          = computeOverloadSuggestions(workouts);
   const oneRMSeries       = computeOneRMSeries(workouts);
   const consistency       = computeConsistencyScore(workouts);
-  const summary     = summarizeWorkouts(workouts, acwr, plateaus, balance);
+  const nutritionLog      = await readNutritionLogServer();
+  const nutritionSummary  = summarizeNutrition(nutritionLog);
+  const summary     = summarizeWorkouts(workouts, acwr, plateaus, balance, nutritionSummary);
 
   // Stats bar computation — UTC date strings
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -124,6 +127,7 @@ export default async function DashboardPage() {
             {/* Row 1: Consistency heatmap */}
             <ConsistencyHeatmap
               days={heatmap}
+              workouts={workouts}
               currentStreak={streaks.current_streak}
               longestStreak={streaks.longest_streak}
               avgGapDays={streaks.avg_gap_days}
@@ -180,6 +184,7 @@ export default async function DashboardPage() {
         acwr={acwr}
         plateaus={plateaus}
         balance={balance}
+        nutritionSummary={nutritionSummary}
       />
     </main>
   );
