@@ -17,6 +17,7 @@ import { BalanceAnalyzer } from '@/components/BalanceAnalyzer';
 import { SessionQuality } from '@/components/SessionQuality';
 import { WeeklyVolume } from '@/components/WeeklyVolume';
 import { PersonalRecords } from '@/components/PersonalRecords';
+import { NutritionDashboardWidget } from '@/components/NutritionDashboardWidget';
 import { ChatPanel } from '@/components/ChatPanel';
 
 export default async function DashboardPage() {
@@ -155,6 +156,9 @@ export default async function DashboardPage() {
                 <SessionQuality qualities={qualities} />
               </div>
             </div>
+
+            {/* Row 5: Nutrition (full width, client-side from localStorage) */}
+            <NutritionDashboardWidget />
           </div>
         )}
       </div>
