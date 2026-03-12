@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  loadLog,
+  fetchLog,
   saveEntry,
   deleteEntry,
   emptyEntry,
@@ -110,8 +110,8 @@ function EntryForm({
   onDelete,
 }: {
   entry: NutritionEntry;
-  onSave: (e: NutritionEntry) => void;
-  onDelete: () => void;
+  onSave: (e: NutritionEntry) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
   const [calories, setCalories] = useState(entry.calories?.toString() ?? '');
   const [protein, setProtein] = useState(entry.protein_g?.toString() ?? '');
@@ -338,19 +338,21 @@ export default function NutritionPage() {
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
 
-  useEffect(() => {
-    setLog(loadLog());
+  const [loading, setLoading] = useState(true);
+
+  const refreshLog = useCallback(() => {
+    fetchLog().then((l) => { setLog(l); setLoading(false); });
   }, []);
 
-  const refreshLog = useCallback(() => setLog(loadLog()), []);
+  useEffect(() => { refreshLog(); }, [refreshLog]);
 
-  function handleSave(updated: NutritionEntry) {
-    saveEntry(updated);
+  async function handleSave(updated: NutritionEntry) {
+    await saveEntry(updated);
     refreshLog();
   }
 
-  function handleDelete() {
-    deleteEntry(selectedDate);
+  async function handleDelete() {
+    await deleteEntry(selectedDate);
     refreshLog();
   }
 
@@ -373,11 +375,16 @@ export default function NutritionPage() {
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="mx-auto max-w-7xl px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-zinc-100">Nutrition Log</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Track daily calories, macros, and hydration to improve recovery insights
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-zinc-100">Nutrition Log</h1>
+            <p className="mt-1 text-sm text-zinc-400">
+              Track daily calories, macros, and hydration to improve recovery insights
+            </p>
+          </div>
+          {loading && (
+            <span className="text-xs text-zinc-500 animate-pulse">Loading…</span>
+          )}
         </div>
 
         {/* Calendar + Form */}

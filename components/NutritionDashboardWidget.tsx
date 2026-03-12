@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  loadLog,
+  fetchLog,
   entryHasData,
   lastNDays,
   NutritionLog,
@@ -65,7 +65,7 @@ export function NutritionDashboardWidget() {
   const [log, setLog] = useState<NutritionLog | null>(null);
 
   useEffect(() => {
-    setLog(loadLog());
+    fetchLog().then(setLog);
   }, []);
 
   // Don't render during SSR or before hydration (localStorage unavailable)

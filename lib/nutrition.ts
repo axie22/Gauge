@@ -11,28 +11,30 @@ export interface NutritionEntry {
 
 export type NutritionLog = Record<string, NutritionEntry>;
 
-export const NUTRITION_KEY = 'hevy-nutrition-log';
+// ─── API-backed persistence (server writes to data/nutrition.json) ─────────────
 
-export function loadLog(): NutritionLog {
-  if (typeof window === 'undefined') return {};
+export async function fetchLog(): Promise<NutritionLog> {
   try {
-    const raw = localStorage.getItem(NUTRITION_KEY);
-    return raw ? (JSON.parse(raw) as NutritionLog) : {};
+    const res = await fetch('/api/nutrition', { cache: 'no-store' });
+    if (!res.ok) return {};
+    return (await res.json()) as NutritionLog;
   } catch {
     return {};
   }
 }
 
-export function saveEntry(entry: NutritionEntry): void {
-  const log = loadLog();
-  log[entry.date] = entry;
-  localStorage.setItem(NUTRITION_KEY, JSON.stringify(log));
+export async function saveEntry(entry: NutritionEntry): Promise<void> {
+  await fetch('/api/nutrition', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  });
 }
 
-export function deleteEntry(date: string): void {
-  const log = loadLog();
-  delete log[date];
-  localStorage.setItem(NUTRITION_KEY, JSON.stringify(log));
+export async function deleteEntry(date: string): Promise<void> {
+  await fetch(`/api/nutrition?date=${encodeURIComponent(date)}`, {
+    method: 'DELETE',
+  });
 }
 
 export function emptyEntry(date: string): NutritionEntry {
