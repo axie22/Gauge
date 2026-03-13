@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { AcwrResult, BalanceResult, PlateauResult } from '@/lib/hevy';
+import { BalanceResult, PlateauResult, MuscleReadiness } from '@/lib/hevy';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,7 +12,7 @@ interface Message {
 
 interface Props {
   summary: string;
-  acwr: AcwrResult[];
+  readiness: MuscleReadiness[];
   plateaus: PlateauResult[];
   balance: BalanceResult;
   nutritionSummary?: string;
@@ -30,15 +30,15 @@ const STARTER_QUESTIONS = [
 
 function buildSystemPrompt(
   summary: string,
-  acwr: AcwrResult[],
+  readiness: MuscleReadiness[],
   plateaus: PlateauResult[],
   balance: BalanceResult,
   nutritionSummary?: string,
   profileSummary?: string | null,
 ): string {
-  const acwrWarnings = acwr
-    .filter((a) => a.status === 'danger' || a.status === 'undertrained')
-    .map((a) => `${a.muscle_group}:${a.status.toUpperCase()}(${a.ratio.toFixed(2)})`)
+  const readinessWarnings = readiness
+    .filter((r) => r.status === 'fatigued' || r.status === 'overtrained')
+    .map((r) => `${r.muscle_group}:${r.status.toUpperCase()}(${r.readiness}/100)`)
     .join(', ') || 'none';
 
   const plateauWarnings = plateaus
@@ -70,13 +70,13 @@ ${summary}
 TODAY'S DATE: ${new Date().toISOString().slice(0, 10)}
 
 COMPUTED METRICS:
-- ACWR flags: ${acwrWarnings}
+- Muscle readiness flags: ${readinessWarnings}
 - Plateau flags: ${plateauWarnings}
 - Push/Pull ratio (30d): ${balance.push_pull_ratio.toFixed(2)}
 - Quad/Hip ratio (30d): ${balance.quad_hip_ratio.toFixed(2)}${nutritionSection}${profileSection}`;
 }
 
-export function ChatPanel({ summary, acwr, plateaus, balance, nutritionSummary, profileSummary }: Props) {
+export function ChatPanel({ summary, readiness, plateaus, balance, nutritionSummary, profileSummary }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -89,7 +89,7 @@ export function ChatPanel({ summary, acwr, plateaus, balance, nutritionSummary, 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const systemPrompt = buildSystemPrompt(summary, acwr, plateaus, balance, nutritionSummary, profileSummary);
+  const systemPrompt = buildSystemPrompt(summary, readiness, plateaus, balance, nutritionSummary, profileSummary);
 
   async function sendMessage(content: string) {
     if (!content.trim() || isStreaming) return;

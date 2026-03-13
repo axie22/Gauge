@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   ]);
   const nutritionSummary  = summarizeNutrition(nutritionLog);
   const profileSummary    = summarizeProfile(profile);
-  const summary     = summarizeWorkouts(workouts, acwr, plateaus, balance, nutritionSummary, profileSummary);
+  const summary     = summarizeWorkouts(workouts, acwr, plateaus, balance, nutritionSummary, profileSummary, readiness);
 
   // Stats bar computation — UTC date strings
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -186,7 +186,7 @@ export default async function DashboardPage() {
 
       <ChatPanel
         summary={summary}
-        acwr={acwr}
+        readiness={readiness}
         plateaus={plateaus}
         balance={balance}
         nutritionSummary={nutritionSummary}

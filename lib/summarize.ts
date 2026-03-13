@@ -3,6 +3,7 @@ import {
   AcwrResult,
   PlateauResult,
   BalanceResult,
+  MuscleReadiness,
 } from './hevy';
 import { computeStreakStats, buildHeatmapData } from './analytics';
 
@@ -13,6 +14,7 @@ export function summarizeWorkouts(
   balance: BalanceResult,
   nutritionSummary?: string,
   profileSummary?: string | null,
+  readiness?: MuscleReadiness[],
 ): string {
   const now = new Date();
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400000);
@@ -59,6 +61,28 @@ export function summarizeWorkouts(
 
   const lines: string[] = [];
 
+  // Recent sessions log — last 14 days, full detail
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 86400000);
+  const recentSessions = workouts
+    .filter((w) => new Date(w.start_time) >= fourteenDaysAgo)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  lines.push(`=== RECENT SESSIONS (last 14 days) ===`);
+  if (recentSessions.length === 0) {
+    lines.push('No sessions in the last 14 days');
+  } else {
+    for (const w of recentSessions) {
+      lines.push(`${w.date} — ${w.title} (${w.duration_minutes} min, ${Math.round(w.total_volume_kg)} kg total)`);
+      for (const ex of w.exercises) {
+        const working = ex.sets.filter((s) => s.is_working_set);
+        if (working.length === 0) continue;
+        const topWeight = ex.top_set_weight_kg > 0 ? ` @ ${ex.top_set_weight_kg} kg top` : '';
+        lines.push(`  • ${ex.title}: ${working.length} sets${topWeight}`);
+      }
+    }
+  }
+  lines.push('');
+
   lines.push(`=== TRAINING SUMMARY (last 90 days) ===`);
   lines.push(
     `Total workouts: ${recent.length} | Total volume: ${Math.round(totalVolume).toLocaleString()} kg | Avg session: ${Math.round(avgVolume).toLocaleString()} kg`
@@ -77,13 +101,15 @@ export function summarizeWorkouts(
   }
   lines.push('');
 
-  lines.push(`=== ACWR STATUS ===`);
-  const acwrSummary = acwr
-    .filter((a) => a.status !== 'insufficient_data')
-    .map((a) => `${a.muscle_group}: ${a.ratio.toFixed(2)} (${a.status.toUpperCase()})`)
-    .join(', ');
-  lines.push(acwrSummary || 'Insufficient data for ACWR analysis');
-  lines.push('');
+  if (readiness && readiness.length > 0) {
+    lines.push(`=== MUSCLE READINESS (SRA fitness-fatigue model) ===`);
+    for (const r of readiness) {
+      lines.push(
+        `${r.muscle_group}: readiness ${r.readiness}/100 (${r.status.toUpperCase()}) — fitness ${r.fitness.toFixed(0)}, fatigue ${r.fatigue.toFixed(0)}`
+      );
+    }
+    lines.push('');
+  }
 
   lines.push(`=== PLATEAU FLAGS ===`);
   if (plateaus.length === 0) {
