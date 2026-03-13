@@ -20,9 +20,9 @@ interface Props {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 7.5) return '#22c55e';
-  if (score >= 5) return '#f59e0b';
-  return '#ef4444';
+  if (score >= 7.5) return '#34d399';
+  if (score >= 5) return '#fbbf24';
+  return '#f87171';
 }
 
 const CustomDot = (props: { cx?: number; cy?: number; payload?: SessionQualityResult }) => {
@@ -32,9 +32,9 @@ const CustomDot = (props: { cx?: number; cy?: number; payload?: SessionQualityRe
     <circle
       cx={cx}
       cy={cy}
-      r={4}
+      r={3}
       fill={scoreColor(payload.score)}
-      stroke="#18181b"
+      stroke="var(--bg)"
       strokeWidth={1.5}
     />
   );
@@ -50,28 +50,30 @@ const CustomTooltip = ({
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-xs shadow-xl">
-      <div className="font-semibold text-zinc-200 mb-2">{d.date}</div>
+    <div style={{ background: 'var(--surface-up)', border: '1px solid var(--border-up)', borderRadius: 8, padding: '10px 12px' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em', marginBottom: 6 }}>
+        {d.date}
+      </div>
       <div className="space-y-1">
-        <div className="flex justify-between gap-4">
-          <span className="text-zinc-400">Overall</span>
-          <span className="font-bold" style={{ color: scoreColor(d.score) }}>{d.score}/10</span>
+        <div className="flex justify-between gap-6">
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Score</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: scoreColor(d.score) }}>
+            {d.score}/10
+          </span>
         </div>
-        <div className="flex justify-between gap-4">
-          <span className="text-zinc-400">7-session avg</span>
-          <span className="text-indigo-400 font-medium">{d.rolling_avg.toFixed(1)}</span>
+        <div className="flex justify-between gap-6">
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>7-session avg</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}>
+            {d.rolling_avg.toFixed(1)}
+          </span>
         </div>
-        <div className="flex justify-between gap-4">
-          <span className="text-zinc-400">Density</span>
-          <span className="text-zinc-200">{d.density_score.toFixed(1)}</span>
+        <div className="flex justify-between gap-6">
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Density</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{d.density_score.toFixed(1)}</span>
         </div>
-        <div className="flex justify-between gap-4">
-          <span className="text-zinc-400">Completeness</span>
-          <span className="text-zinc-200">{d.completeness_score.toFixed(1)}</span>
-        </div>
-        <div className="flex justify-between gap-4">
-          <span className="text-zinc-400">Timing</span>
-          <span className="text-zinc-200">{d.timing_score.toFixed(1)}</span>
+        <div className="flex justify-between gap-6">
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Completeness</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{d.completeness_score.toFixed(1)}</span>
         </div>
       </div>
     </div>
@@ -94,94 +96,75 @@ export function SessionQuality({ qualities }: Props) {
       ? (recent.reduce((sum, q) => sum + q.score, 0) / recent.length).toFixed(1)
       : '—';
 
+  const avgNum = parseFloat(avgScore);
+
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100">Session Quality</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Density · Completeness · Timing</p>
+          <h2 className="font-semibold" style={{ fontSize: 14, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>
+            Session Quality
+          </h2>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.1em', marginTop: 3 }}>
+            DENSITY · COMPLETENESS · TIMING
+          </p>
         </div>
         <div className="text-right">
           <div
-            className="text-2xl font-bold"
-            style={{
-              color:
-                parseFloat(avgScore) >= 7
-                  ? '#22c55e'
-                  : parseFloat(avgScore) >= 5
-                  ? '#f59e0b'
-                  : '#ef4444',
-            }}
+            className="tabular-nums leading-none"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700, color: scoreColor(avgNum) }}
           >
             {avgScore}
           </div>
-          <div className="text-xs text-zinc-500">avg score</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em', marginTop: 3 }}>
+            AVG SCORE
+          </div>
         </div>
       </div>
 
       {recent.length < 2 ? (
-        <div className="flex h-48 items-center justify-center text-zinc-500 text-sm">
+        <div className="flex h-48 items-center justify-center" style={{ color: 'var(--text-3)', fontSize: 13 }}>
           Need more sessions for quality scoring
         </div>
       ) : (
-        <>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-              <XAxis
-                dataKey="date"
-                tick={{ fill: '#71717a', fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                interval={Math.floor(recent.length / 6)}
-                tickFormatter={(v: string) => v.slice(5)}
-              />
-              <YAxis
-                domain={[0, 10]}
-                tick={{ fill: '#71717a', fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine y={7.5} stroke="#22c55e" strokeDasharray="4 2" strokeOpacity={0.4} />
-              <ReferenceLine y={5} stroke="#f59e0b" strokeDasharray="4 2" strokeOpacity={0.4} />
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#52525b"
-                strokeWidth={1}
-                dot={<CustomDot />}
-                activeDot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="rolling_avg"
-                stroke="#6366f1"
-                strokeWidth={2}
-                dot={false}
-                activeDot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-          <div className="mt-3 flex gap-4 text-xs text-zinc-500">
-            <span className="flex items-center gap-1.5">
-              <span className="w-4 h-0.5 bg-indigo-500 inline-block rounded" />
-              7-session avg
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-              Good (≥7.5)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-              Fair (5–7.5)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-              Poor (&lt;5)
-            </span>
-          </div>
-        </>
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: '#464646', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+              axisLine={false}
+              tickLine={false}
+              interval={Math.floor(recent.length / 6)}
+              tickFormatter={(v: string) => v.slice(5)}
+            />
+            <YAxis
+              domain={[0, 10]}
+              tick={{ fill: '#464646', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
+            <ReferenceLine y={7.5} stroke="rgba(52,211,153,0.2)" strokeDasharray="4 2" />
+            <ReferenceLine y={5} stroke="rgba(251,191,36,0.2)" strokeDasharray="4 2" />
+            <Line
+              type="monotone"
+              dataKey="score"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth={1}
+              dot={<CustomDot />}
+              activeDot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="rolling_avg"
+              stroke="#00B4FF"
+              strokeWidth={2}
+              dot={false}
+              activeDot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       )}
     </div>
   );

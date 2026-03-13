@@ -1,16 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
 import { EnrichedWorkout, BalanceResult } from '@/lib/hevy';
 import { analyzeBalance } from '@/lib/analytics';
-import { DangerBadge } from './DangerBadge';
 import { useUnits } from '@/lib/units';
 
 interface Props {
@@ -20,49 +12,90 @@ interface Props {
 
 type Period = 30 | 90 | 365;
 
-function RatioGauge({
-  label,
-  ratio,
+function RatioPair({
   leftLabel,
+  leftVol,
   rightLabel,
-  dangerThreshold,
+  rightVol,
+  ratio,
+  isWarning,
+  fmtVolume,
 }: {
-  label: string;
-  ratio: number;
   leftLabel: string;
+  leftVol: number;
   rightLabel: string;
-  dangerThreshold: number;
+  rightVol: number;
+  ratio: number;
+  isWarning: boolean;
+  fmtVolume: (kg: number) => string;
 }) {
-  // Normalize ratio to 0–100% where 1.0 ratio = 50%
-  const clampedRatio = Math.min(ratio, dangerThreshold * 1.2);
-  const pct = Math.round((clampedRatio / (dangerThreshold * 1.2)) * 100);
-  const isWarning = ratio > dangerThreshold;
+  const total = leftVol + rightVol;
+  const leftPct = total > 0 ? (leftVol / total) * 100 : 50;
+  const rightPct = total > 0 ? (rightVol / total) * 100 : 50;
+  const ratioColor = isWarning ? 'var(--amber)' : 'var(--green)';
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-xs text-zinc-400">{label}</span>
-      <div className="relative w-28 h-28">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart
-            innerRadius="60%"
-            outerRadius="90%"
-            data={[{ value: pct, fill: isWarning ? '#ef4444' : '#22c55e' }]}
-            startAngle={180}
-            endAngle={0}
-          >
-            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-            <RadialBar dataKey="value" cornerRadius={4} />
-          </RadialBarChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
-          <span className={`text-sm font-bold ${isWarning ? 'text-red-400' : 'text-emerald-400'}`}>
-            {ratio === 99 ? '∞' : ratio.toFixed(1)}x
+    <div style={{ paddingTop: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <span style={{ fontSize: 11, color: 'var(--text-2)', fontWeight: 500 }}>
+          {leftLabel} / {rightLabel}
+        </span>
+        <span
+          className="tabular-nums"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 13,
+            fontWeight: 700,
+            color: ratioColor,
+          }}
+        >
+          {ratio === 99 ? '∞' : ratio.toFixed(2)}x
+        </span>
+      </div>
+
+      {/* Left bar */}
+      <div className="mb-1.5">
+        <div className="flex items-center justify-between mb-1">
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em' }}>
+            {leftLabel.toUpperCase()}
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums' }}>
+            {fmtVolume(leftVol)}
           </span>
         </div>
+        <div style={{ height: 4, background: 'var(--surface-up)', borderRadius: 2, overflow: 'hidden' }}>
+          <div
+            style={{
+              height: '100%',
+              width: `${leftPct}%`,
+              background: isWarning ? 'var(--amber)' : 'var(--accent)',
+              borderRadius: 2,
+              transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          />
+        </div>
       </div>
-      <div className="flex w-full justify-between text-xs text-zinc-500 px-1">
-        <span>{leftLabel}</span>
-        <span>{rightLabel}</span>
+
+      {/* Right bar */}
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em' }}>
+            {rightLabel.toUpperCase()}
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-2)' }}>
+            {fmtVolume(rightVol)}
+          </span>
+        </div>
+        <div style={{ height: 4, background: 'var(--surface-up)', borderRadius: 2, overflow: 'hidden' }}>
+          <div
+            style={{
+              height: '100%',
+              width: `${rightPct}%`,
+              background: 'var(--surface-hover)',
+              borderRadius: 2,
+            }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -78,24 +111,43 @@ export function BalanceAnalyzer({ workouts, initialBalance }: Props) {
   }, [period, workouts, initialBalance]);
 
   const periods: Period[] = [30, 90, 365];
+  const pushPullWarning = balance.push_pull_ratio > 2.0;
+  const quadHipWarning = balance.quad_hip_ratio > 2.5;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div
+      className="h-full"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100">Strength Balance</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Push/pull & quad/hip volume ratios</p>
+          <h2 className="font-semibold" style={{ fontSize: 14, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>
+            Strength Balance
+          </h2>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.1em', marginTop: 3 }}>
+            VOLUME RATIOS
+          </p>
         </div>
-        <div className="flex rounded-lg border border-zinc-700 overflow-hidden text-xs">
+        <div
+          className="flex rounded overflow-hidden"
+          style={{ border: '1px solid var(--border-up)' }}
+        >
           {periods.map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 transition-colors ${
-                period === p
-                  ? 'bg-zinc-700 text-zinc-100'
-                  : 'text-zinc-400 hover:bg-zinc-800'
-              }`}
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                letterSpacing: '0.08em',
+                padding: '5px 10px',
+                color: period === p ? 'var(--text-1)' : 'var(--text-3)',
+                background: period === p ? 'var(--surface-up)' : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
             >
               {p === 365 ? '1Y' : `${p}D`}
             </button>
@@ -104,53 +156,45 @@ export function BalanceAnalyzer({ workouts, initialBalance }: Props) {
       </div>
 
       {balance.push_volume === 0 && balance.pull_volume === 0 ? (
-        <div className="flex h-40 items-center justify-center text-zinc-500 text-sm">
+        <div className="flex h-40 items-center justify-center" style={{ color: 'var(--text-3)', fontSize: 13 }}>
           No push/pull data for this period
         </div>
       ) : (
-        <>
-          <div className="flex justify-around py-2">
-            <RatioGauge
-              label="Push / Pull"
-              ratio={balance.push_pull_ratio}
-              leftLabel="Pull"
-              rightLabel="Push"
-              dangerThreshold={2.0}
-            />
-            <RatioGauge
-              label="Quad / Hip"
-              ratio={balance.quad_hip_ratio}
-              leftLabel="Hip"
-              rightLabel="Quad"
-              dangerThreshold={2.5}
-            />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-500">
-            <div className="rounded-lg bg-zinc-800/50 p-2">
-              <div className="text-zinc-400 font-medium">Push</div>
-              <div className="text-zinc-200">{fmtVolume(balance.push_volume)}</div>
-            </div>
-            <div className="rounded-lg bg-zinc-800/50 p-2">
-              <div className="text-zinc-400 font-medium">Pull</div>
-              <div className="text-zinc-200">{fmtVolume(balance.pull_volume)}</div>
-            </div>
-            <div className="rounded-lg bg-zinc-800/50 p-2">
-              <div className="text-zinc-400 font-medium">Quad</div>
-              <div className="text-zinc-200">{fmtVolume(balance.quad_volume)}</div>
-            </div>
-            <div className="rounded-lg bg-zinc-800/50 p-2">
-              <div className="text-zinc-400 font-medium">Hip / Posterior</div>
-              <div className="text-zinc-200">{fmtVolume(balance.hip_volume)}</div>
-            </div>
-          </div>
+        <div>
+          <RatioPair
+            leftLabel="Push"
+            leftVol={balance.push_volume}
+            rightLabel="Pull"
+            rightVol={balance.pull_volume}
+            ratio={balance.push_pull_ratio}
+            isWarning={pushPullWarning}
+            fmtVolume={fmtVolume}
+          />
+          <RatioPair
+            leftLabel="Quad"
+            leftVol={balance.quad_volume}
+            rightLabel="Hip"
+            rightVol={balance.hip_volume}
+            ratio={balance.quad_hip_ratio}
+            isWarning={quadHipWarning}
+            fmtVolume={fmtVolume}
+          />
 
           {balance.warning && (
-            <div className="mt-3 rounded-lg border border-amber-800 bg-amber-900/30 px-3 py-2 text-xs text-amber-300">
+            <div
+              className="mt-4 rounded-lg px-3 py-2.5 text-xs"
+              style={{
+                background: 'var(--amber-dim)',
+                border: '1px solid rgba(251,191,36,0.2)',
+                color: 'var(--amber)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+              }}
+            >
               {balance.warning}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

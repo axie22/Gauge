@@ -22,13 +22,13 @@ function getVolumeLevel(vol: number, max: number): number {
   return 5;
 }
 
-const levelColors: Record<number, string> = {
-  0: 'bg-zinc-800',
-  1: 'bg-emerald-900',
-  2: 'bg-emerald-800',
-  3: 'bg-emerald-700',
-  4: 'bg-emerald-600',
-  5: 'bg-emerald-500',
+const LEVEL_BG: Record<number, string> = {
+  0: 'rgba(255,255,255,0.04)',
+  1: 'rgba(0,180,255,0.12)',
+  2: 'rgba(0,180,255,0.25)',
+  3: 'rgba(0,180,255,0.45)',
+  4: 'rgba(0,180,255,0.68)',
+  5: 'rgba(0,180,255,0.92)',
 };
 
 function WorkoutDetail({
@@ -47,46 +47,71 @@ function WorkoutDetail({
 
   if (workouts.length === 0) {
     return (
-      <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 flex items-center justify-between">
+      <div
+        className="mt-4 flex items-center justify-between"
+        style={{ background: 'var(--surface-up)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px' }}
+      >
         <div>
-          <p className="text-xs font-semibold text-zinc-400">{formatted}</p>
-          <p className="text-sm text-zinc-600 mt-1">Rest day — no workout logged</p>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em' }}>
+            {formatted.toUpperCase()}
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 4 }}>Rest day — no workout logged</p>
         </div>
-        <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 text-lg leading-none">×</button>
+        <button
+          onClick={onClose}
+          style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer' }}
+        >×</button>
       </div>
     );
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-zinc-700 bg-zinc-950/80 overflow-hidden">
+    <div
+      className="mt-4 overflow-hidden"
+      style={{ background: 'var(--surface-up)', border: '1px solid var(--border-up)', borderRadius: 10 }}
+    >
       {workouts.map((w) => (
         <div key={w.id}>
           {/* Workout header */}
-          <div className="flex items-start justify-between px-4 py-3 border-b border-zinc-800">
+          <div
+            className="flex items-start justify-between"
+            style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}
+          >
             <div>
-              <p className="text-xs text-zinc-500">{formatted}</p>
-              <p className="text-sm font-semibold text-zinc-100 mt-0.5">{w.title}</p>
-              <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
-                <span>{w.duration_minutes} min</span>
-                <span>{fmtVolume(w.total_volume_kg)} total</span>
-                <span>{w.exercises.length} exercises</span>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em' }}>
+                {formatted.toUpperCase()}
+              </p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', marginTop: 3 }}>{w.title}</p>
+              <div
+                className="flex items-center gap-3 mt-1"
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)' }}
+              >
+                <span>{w.duration_minutes} MIN</span>
+                <span>{fmtVolume(w.total_volume_kg)} TOTAL</span>
+                <span>{w.exercises.length} EXERCISES</span>
               </div>
             </div>
-            <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 text-lg leading-none mt-0.5">×</button>
+            <button
+              onClick={onClose}
+              style={{ fontSize: 18, lineHeight: 1, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}
+            >×</button>
           </div>
 
           {/* Exercise list */}
-          <div className="divide-y divide-zinc-800/60 max-h-72 overflow-y-auto">
+          <div style={{ maxHeight: 272, overflowY: 'auto' }}>
             {w.exercises.map((ex) => {
               const working = ex.sets.filter((s) => s.is_working_set);
               if (working.length === 0) return null;
               return (
-                <div key={ex.exercise_template_id} className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-medium text-zinc-200">{ex.title}</span>
+                <div
+                  key={ex.exercise_template_id}
+                  style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-1)' }}>{ex.title}</span>
                     {ex.top_set_weight_kg > 0 && (
-                      <span className="text-[10px] text-zinc-500 tabular-nums">
-                        top {fmtWeight(ex.top_set_weight_kg)}
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)' }}>
+                        TOP {fmtWeight(ex.top_set_weight_kg)}
                       </span>
                     )}
                   </div>
@@ -96,11 +121,16 @@ function WorkoutDetail({
                       return (
                         <span
                           key={i}
-                          className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
-                            isTop
-                              ? 'bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/20'
-                              : 'bg-zinc-800 text-zinc-400'
-                          }`}
+                          className="tabular-nums"
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 10,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            background: isTop ? 'var(--accent-dim)' : 'var(--surface)',
+                            color: isTop ? 'var(--accent)' : 'var(--text-2)',
+                            border: `1px solid ${isTop ? 'var(--accent-border)' : 'var(--border)'}`,
+                          }}
                         >
                           {s.weight_kg != null && s.weight_kg > 0
                             ? `${fmtWeight(s.weight_kg)} × ${s.reps ?? '—'}`
@@ -153,13 +183,7 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
       const row = cursor.getDay();
       const dateStr = cursor.toISOString().slice(0, 10);
       const volume = volumeMap.get(dateStr) ?? 0;
-      grid.push({
-        date: dateStr,
-        volume,
-        level: getVolumeLevel(volume, maxVolume),
-        col,
-        row,
-      });
+      grid.push({ date: dateStr, volume, level: getVolumeLevel(volume, maxVolume), col, row });
       if (row === 6) col++;
       cursor.setDate(cursor.getDate() + 1);
     }
@@ -178,10 +202,7 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
         if (!seen.has(month)) {
           seen.add(month);
           const d = new Date(cell.date);
-          labels.push({
-            col: cell.col,
-            label: d.toLocaleString('default', { month: 'short' }),
-          });
+          labels.push({ col: cell.col, label: d.toLocaleString('default', { month: 'short' }) });
         }
       }
     }
@@ -199,14 +220,24 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
   const selectedWorkouts = selectedDate ? (workoutsByDate.get(selectedDate) ?? []) : null;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+    <div
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-zinc-100">Workout Consistency</h2>
-        <div className="flex gap-5 text-sm text-zinc-400">
-          <span><span className="text-zinc-200 font-semibold">{currentStreak}</span> day streak</span>
-          <span>Longest <span className="text-zinc-200 font-semibold">{longestStreak}</span> days</span>
-          <span>Avg gap <span className="text-zinc-200 font-semibold">{avgGapDays}d</span></span>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="font-semibold" style={{ fontSize: 14, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>
+          Workout Consistency
+        </h2>
+        <div className="flex gap-5">
+          {[
+            { label: 'streak', value: currentStreak, suffix: 'd' },
+            { label: 'longest', value: longestStreak, suffix: 'd' },
+            { label: 'avg gap', value: avgGapDays, suffix: 'd' },
+          ].map(({ label, value, suffix }) => (
+            <span key={label} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.06em' }}>
+              {label.toUpperCase()} <span style={{ color: 'var(--text-1)', fontWeight: 700 }}>{value}{suffix}</span>
+            </span>
+          ))}
         </div>
       </div>
 
@@ -219,10 +250,16 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
           {['', 'Mon', '', 'Wed', '', 'Fri', ''].map((label, i) => (
             <div
               key={i}
-              className="flex items-center justify-end text-[10px] text-zinc-600 pr-1.5"
-              style={{ height: CELL }}
+              className="flex items-center justify-end pr-1.5"
+              style={{
+                height: CELL,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 9,
+                color: 'var(--text-3)',
+                letterSpacing: '0.06em',
+              }}
             >
-              {label}
+              {label.toUpperCase()}
             </div>
           ))}
         </div>
@@ -235,8 +272,15 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
               {monthLabels.map(({ col, label }) => (
                 <span
                   key={`${col}-${label}`}
-                  className="absolute text-xs text-zinc-500"
-                  style={{ left: col * (CELL + GAP) }}
+                  className="absolute"
+                  style={{
+                    left: col * (CELL + GAP),
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 9,
+                    color: 'var(--text-3)',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}
                 >
                   {label}
                 </span>
@@ -259,12 +303,18 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
                   <div
                     key={cell.date}
                     onClick={() => handleCellClick(cell.date)}
-                    className={`rounded-sm transition-all ${
-                      hasWorkout ? 'cursor-pointer hover:opacity-80' : 'cursor-default'
-                    } ${levelColors[cell.level]} ${
-                      isSelected ? 'ring-2 ring-white/60 ring-offset-1 ring-offset-zinc-900' : ''
-                    }`}
-                    style={{ gridColumn: cell.col + 1, gridRow: cell.row + 1, width: CELL, height: CELL }}
+                    style={{
+                      gridColumn: cell.col + 1,
+                      gridRow: cell.row + 1,
+                      width: CELL,
+                      height: CELL,
+                      borderRadius: 3,
+                      background: LEVEL_BG[cell.level],
+                      cursor: hasWorkout ? 'pointer' : 'default',
+                      outline: isSelected ? '2px solid rgba(0,180,255,0.7)' : 'none',
+                      outlineOffset: 1,
+                      transition: 'opacity 0.1s',
+                    }}
                     onMouseEnter={(e) => {
                       if (isSelected) return;
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -278,11 +328,18 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
 
             {/* Legend */}
             <div className="flex items-center gap-1 mt-3 justify-end">
-              <span className="text-xs text-zinc-500 mr-1">Less</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-3)', marginRight: 4, letterSpacing: '0.06em' }}>
+                LESS
+              </span>
               {[0, 1, 2, 3, 4, 5].map((l) => (
-                <div key={l} className={`w-3 h-3 rounded-sm ${levelColors[l]}`} />
+                <div
+                  key={l}
+                  style={{ width: 12, height: 12, borderRadius: 3, background: LEVEL_BG[l] }}
+                />
               ))}
-              <span className="text-xs text-zinc-500 ml-1">More</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-3)', marginLeft: 4, letterSpacing: '0.06em' }}>
+                MORE
+              </span>
             </div>
           </div>
         </div>
@@ -300,14 +357,27 @@ export function ConsistencyHeatmap({ days, workouts, currentStreak, longestStrea
       {/* Hover tooltip */}
       {tooltip && !selectedDate && (
         <div
-          className="fixed z-50 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs shadow-xl pointer-events-none"
-          style={{ top: tooltip.y - 60, left: tooltip.x - 60 }}
+          className="fixed z-50 pointer-events-none"
+          style={{
+            top: tooltip.y - 64,
+            left: tooltip.x - 64,
+            background: 'var(--surface-up)',
+            border: '1px solid var(--border-up)',
+            borderRadius: 8,
+            padding: '8px 12px',
+          }}
         >
-          <div className="font-medium text-zinc-200">{tooltip.date}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-2)', fontWeight: 600 }}>
+            {tooltip.date}
+          </div>
           {tooltip.volume > 0 ? (
-            <div className="text-zinc-400">{fmtVolume(tooltip.volume)} volume</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+              {fmtVolume(tooltip.volume)} volume
+            </div>
           ) : (
-            <div className="text-zinc-500">Rest day</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+              Rest day
+            </div>
           )}
         </div>
       )}

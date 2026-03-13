@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { MuscleReadiness } from '@/lib/hevy';
 
 interface Props {
@@ -7,25 +8,37 @@ interface Props {
 }
 
 const STATUS_CONFIG: Record<MuscleReadiness['status'], {
-  bar: string; text: string; accent: string; label: string;
+  accent: string; bar: string; text: string; label: string;
 }> = {
-  fresh:       { bar: 'bg-emerald-500', text: 'text-emerald-400', accent: 'bg-emerald-500', label: 'Fresh' },
-  optimal:     { bar: 'bg-indigo-500',  text: 'text-indigo-400',  accent: 'bg-indigo-500',  label: 'Optimal' },
-  fatigued:    { bar: 'bg-amber-500',   text: 'text-amber-400',   accent: 'bg-amber-500',   label: 'Fatigued' },
-  overtrained: { bar: 'bg-red-500',     text: 'text-red-400',     accent: 'bg-red-500',     label: 'Overtrained' },
+  fresh:       { accent: 'var(--green)',  bar: 'var(--green)',  text: 'var(--green)',  label: 'Fresh'       },
+  optimal:     { accent: 'var(--accent)', bar: 'var(--accent)', text: 'var(--accent)', label: 'Optimal'     },
+  fatigued:    { accent: 'var(--amber)',  bar: 'var(--amber)',  text: 'var(--amber)',  label: 'Fatigued'    },
+  overtrained: { accent: 'var(--red)',    bar: 'var(--red)',    text: 'var(--red)',    label: 'Overtrained' },
 };
 
-function ReadinessBar({ readiness, status }: { readiness: number; status: MuscleReadiness['status'] }) {
-  const { bar } = STATUS_CONFIG[status];
+function AnimatedBar({ readiness, color }: { readiness: number; color: string }) {
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    el.style.width = '0%';
+    const raf = requestAnimationFrame(() => {
+      el.style.transition = 'width 0.7s cubic-bezier(0.16, 1, 0.3, 1)';
+      el.style.width = `${readiness}%`;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [readiness]);
+
   return (
-    <div className="relative h-1.5 rounded-full bg-zinc-800/80">
+    <div
+      className="relative rounded-full overflow-hidden"
+      style={{ height: 3, background: 'var(--surface-up)' }}
+    >
       <div
-        className="absolute inset-y-0 rounded-sm bg-zinc-700/30"
-        style={{ left: '40%', width: '30%' }}
-      />
-      <div
-        className={`absolute inset-y-0 left-0 rounded-full transition-all ${bar}`}
-        style={{ width: `${readiness}%` }}
+        ref={barRef}
+        className="absolute inset-y-0 left-0 rounded-full"
+        style={{ background: color, width: 0 }}
       />
     </div>
   );
@@ -36,22 +49,50 @@ export function MuscleReadinessChart({ results }: Props) {
   const fatiguedCount    = results.filter((r) => r.status === 'fatigued').length;
   const overtrainedCount = results.filter((r) => r.status === 'overtrained').length;
 
+  const col1 = display.slice(0, Math.ceil(display.length / 2));
+  const col2 = display.slice(Math.ceil(display.length / 2));
+
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 h-full">
+    <div
+      className="h-full"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-base font-semibold text-zinc-100">Muscle Readiness</h2>
-          <p className="text-xs text-zinc-600 mt-0.5">SRA fitness-fatigue model</p>
+          <h2 className="font-semibold" style={{ fontSize: 14, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>
+            Muscle Readiness
+          </h2>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.1em', marginTop: 3 }}>
+            SRA FITNESS-FATIGUE MODEL
+          </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {overtrainedCount > 0 && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                background: 'var(--red-dim)',
+                color: 'var(--red)',
+                border: '1px solid rgba(248,113,113,0.2)',
+              }}
+            >
               {overtrainedCount} overtrained
             </span>
           )}
           {fatiguedCount > 0 && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <span
+              className="text-xs font-medium px-2 py-0.5 rounded"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                background: 'var(--amber-dim)',
+                color: 'var(--amber)',
+                border: '1px solid rgba(251,191,36,0.2)',
+              }}
+            >
               {fatiguedCount} fatigued
             </span>
           )}
@@ -59,49 +100,61 @@ export function MuscleReadinessChart({ results }: Props) {
       </div>
 
       {display.length === 0 ? (
-        <div className="flex h-40 items-center justify-center text-zinc-600 text-sm">
-          No data yet — log workouts to see readiness
+        <div className="flex h-40 items-center justify-center" style={{ color: 'var(--text-3)', fontSize: 13 }}>
+          Log workouts to see readiness
         </div>
       ) : (
-        <>
-          <div className="space-y-3.5">
-            {display.map((r) => {
-              const { text, accent } = STATUS_CONFIG[r.status];
-              return (
-                <div key={r.muscle_group} className="flex items-center gap-3">
-                  {/* Left accent strip — communicates status through geometry */}
-                  <div className={`w-0.5 h-7 rounded-full shrink-0 ${accent}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-zinc-400 capitalize">
-                        {r.muscle_group.replace(/_/g, ' ')}
-                      </span>
-                      <span className={`text-xs font-semibold tabular-nums ${text}`}>
-                        {r.readiness}%
-                      </span>
-                    </div>
-                    <ReadinessBar readiness={r.readiness} status={r.status} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
+          {[col1, col2].map((col, ci) => (
+            <div key={ci}>
+              {col.map((r, i) => {
+                const { accent, bar, text, label } = STATUS_CONFIG[r.status];
+                const isLast = i === col.length - 1;
+                return (
+                  <div
+                    key={r.muscle_group}
+                    className="flex items-center gap-3 py-3"
+                    style={!isLast ? { borderBottom: '1px solid var(--border)' } : {}}
+                  >
+                    {/* Accent strip */}
+                    <div style={{ width: 2, height: 32, borderRadius: 2, background: accent, flexShrink: 0 }} />
 
-          <div className="mt-5 flex flex-wrap gap-4 text-[10px] text-zinc-600">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-3 rounded-full bg-emerald-500 inline-block" />Fresh (70–100)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-3 rounded-full bg-indigo-500 inline-block" />Optimal (40–69)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-3 rounded-full bg-amber-500 inline-block" />Fatigued (15–39)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-3 rounded-full bg-red-500 inline-block" />Overtrained (&lt;15)
-            </span>
-          </div>
-        </>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className="capitalize"
+                          style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 500 }}
+                        >
+                          {r.muscle_group.replace(/_/g, ' ')}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="tabular-nums"
+                            style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: text }}
+                          >
+                            {r.readiness}%
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 9,
+                              letterSpacing: '0.08em',
+                              color: accent,
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {label}
+                          </span>
+                        </div>
+                      </div>
+                      <AnimatedBar readiness={r.readiness} color={bar} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

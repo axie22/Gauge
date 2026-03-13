@@ -1,22 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/Navbar";
 import { UnitsProvider } from "@/lib/units";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Training Intelligence | Hevy Dashboard",
-  description: "Workout analytics: ACWR, plateaus, balance, and AI coaching",
+  title: "Training Intelligence",
+  description: "Workout analytics powered by Hevy — recovery, progression, plateaus, and AI coaching",
 };
 
 export default function RootLayout({
@@ -25,10 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950`}
-      >
+    <html lang="en">
+      <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}>
         <UnitsProvider>
           <Navbar />
           {children}

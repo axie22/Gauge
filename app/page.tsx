@@ -29,12 +29,26 @@ import { NutritionDashboardWidget } from '@/components/NutritionDashboardWidget'
 import { VolumeStatCard } from '@/components/VolumeStatCard';
 import { ChatPanel } from '@/components/ChatPanel';
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function DashSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 pt-2">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 shrink-0">{children}</span>
-      <div className="flex-1 h-px bg-zinc-800" />
-    </div>
+    <section>
+      <div className="flex items-center gap-4 mb-6">
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--text-3)',
+            fontWeight: 600,
+          }}
+        >
+          {label}
+        </span>
+        <div className="flex-1" style={{ height: 1, background: 'var(--border)' }} />
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -82,122 +96,168 @@ export default async function DashboardPage() {
     .reduce((s, w) => s + w.total_volume_kg, 0);
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-baseline justify-between gap-4">
-            <h1 className="text-3xl font-bold text-zinc-100">Training Intelligence</h1>
-            <span className="text-sm text-zinc-500 tabular-nums hidden sm:block">
-              {new Date().toLocaleDateString('default', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </span>
+    <main style={{ background: 'var(--bg)', minHeight: '100vh', paddingTop: 48 }}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+
+        {/* ── PAGE HEADER ── */}
+        <div
+          className="flex items-baseline justify-between py-8"
+          style={{ borderBottom: '1px solid var(--border)' }}
+        >
+          <div>
+            <h1
+              className="font-bold"
+              style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--text-1)', letterSpacing: '-0.02em' }}
+            >
+              Training Intelligence
+            </h1>
+            <p
+              className="mt-1"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', letterSpacing: '0.04em' }}
+            >
+              {workouts.length.toLocaleString()} workouts analyzed
+              {workouts.length > 0 && ` · last session ${workouts[workouts.length - 1]?.date}`}
+            </p>
           </div>
-          <p className="mt-1 text-zinc-400 text-sm">
-            {workouts.length.toLocaleString()} workouts analyzed
-            {workouts.length > 0 && (
-              <> · Last session {workouts[workouts.length - 1]?.date}</>
-            )}
-          </p>
+          <span
+            className="hidden sm:block tabular-nums"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)', letterSpacing: '0.04em' }}
+          >
+            {new Date().toLocaleDateString('default', {
+              weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+            }).toUpperCase()}
+          </span>
         </div>
 
         {workouts.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-500">
-            <div className="text-4xl">🏋️</div>
-            <div className="text-lg font-medium text-zinc-400">No workouts found</div>
-            <p className="text-sm">Make sure your HEVY_API_KEY is set correctly in .env</p>
+          <div
+            className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl mt-8"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ background: 'var(--text-3)' }}
+            />
+            <div className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>No workouts found</div>
+            <p className="text-xs" style={{ color: 'var(--text-3)' }}>Make sure your HEVY_API_KEY is set in .env</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Stats bar — unified panel */}
-            <div className="rounded-2xl border border-zinc-800 overflow-hidden">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-zinc-800">
-                <div className="bg-zinc-900 px-5 py-5">
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">This week</div>
-                  <div className="mt-2.5 text-3xl font-bold tabular-nums text-zinc-100 leading-none tracking-tight">{thisWeekSessions}</div>
-                  <div className="text-xs text-zinc-500 mt-1.5">{thisWeekSessions === 1 ? 'session' : 'sessions'}</div>
+          <>
+            {/* ── HERO STATS — large typographic numbers, no cards ── */}
+            <div style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="px-6 py-7" style={{ borderRight: '1px solid var(--border)' }}>
+                  <div className="mono-label mb-3">Sessions</div>
+                  <div
+                    className="tabular-nums leading-none"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 48, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.02em' }}
+                  >
+                    {thisWeekSessions}
+                  </div>
+                  <div className="mono-label mt-2">this week</div>
                 </div>
+
                 <VolumeStatCard volumeKg={thisMonthVolumeKg} />
-                <div className="bg-zinc-900 px-5 py-5">
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Streak</div>
-                  <div className="mt-2.5 text-3xl font-bold tabular-nums text-zinc-100 leading-none tracking-tight">{streaks.current_streak}</div>
-                  <div className="text-xs text-zinc-500 mt-1.5">{streaks.current_streak === 1 ? 'day' : 'days'}</div>
+
+                <div className="px-6 py-7" style={{ borderRight: '1px solid var(--border)' }}>
+                  <div className="mono-label mb-3">Streak</div>
+                  <div
+                    className="tabular-nums leading-none"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 48, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.02em' }}
+                  >
+                    {streaks.current_streak}
+                  </div>
+                  <div className="mono-label mt-2">{streaks.current_streak === 1 ? 'day' : 'days'} active</div>
                 </div>
-                <div className="bg-zinc-900 px-5 py-5">
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">All-time</div>
-                  <div className="mt-2.5 text-3xl font-bold tabular-nums text-zinc-100 leading-none tracking-tight">{workouts.length.toLocaleString()}</div>
-                  <div className="text-xs text-zinc-500 mt-1.5">workouts</div>
+
+                <div className="px-6 py-7" style={{ borderRight: '1px solid var(--border)' }}>
+                  <div className="mono-label mb-3">All-time</div>
+                  <div
+                    className="tabular-nums leading-none"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 48, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.02em' }}
+                  >
+                    {workouts.length.toLocaleString()}
+                  </div>
+                  <div className="mono-label mt-2">workouts</div>
                 </div>
-                <div className="bg-zinc-900 px-5 py-5">
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">12-wk balance</div>
-                  <div className="mt-2.5 text-3xl font-bold tabular-nums text-zinc-100 leading-none tracking-tight">{consistency.avg_score}%</div>
-                  <div className="text-xs text-zinc-500 mt-1.5">muscle coverage</div>
+
+                <div className="px-6 py-7">
+                  <div className="mono-label mb-3">Balance</div>
+                  <div
+                    className="tabular-nums leading-none"
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 48, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.02em' }}
+                  >
+                    {consistency.avg_score}
+                    <span style={{ fontSize: 24, color: 'var(--text-3)' }}>%</span>
+                  </div>
+                  <div className="mono-label mt-2">12-wk coverage</div>
                 </div>
               </div>
             </div>
 
-            {/* Consistency */}
-            <SectionLabel>Consistency</SectionLabel>
-            <ConsistencyHeatmap
-              days={heatmap}
-              workouts={workouts}
-              currentStreak={streaks.current_streak}
-              longestStreak={streaks.longest_streak}
-              avgGapDays={streaks.avg_gap_days}
-            />
+            {/* ── DASHBOARD SECTIONS ── */}
+            <div className="py-8 space-y-16">
 
-            {/* Recovery & Readiness */}
-            <SectionLabel>Recovery &amp; Readiness</SectionLabel>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <MuscleReadinessChart results={readiness} />
-              </div>
-              <div className="lg:col-span-1">
-                <BalanceAnalyzer workouts={workouts} initialBalance={balance} />
-              </div>
+              <DashSection label="Consistency">
+                <ConsistencyHeatmap
+                  days={heatmap}
+                  workouts={workouts}
+                  currentStreak={streaks.current_streak}
+                  longestStreak={streaks.longest_streak}
+                  avgGapDays={streaks.avg_gap_days}
+                />
+              </DashSection>
+
+              <DashSection label="Recovery & Readiness">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <MuscleReadinessChart results={readiness} />
+                  </div>
+                  <div className="lg:col-span-1">
+                    <BalanceAnalyzer workouts={workouts} initialBalance={balance} />
+                  </div>
+                </div>
+              </DashSection>
+
+              <DashSection label="Volume & Strength">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <WeeklyVolume data={weeklyVolume} />
+                  </div>
+                  <div className="lg:col-span-1">
+                    <PersonalRecords records={personalRecords} />
+                  </div>
+                </div>
+              </DashSection>
+
+              <DashSection label="Progression">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <OneRMChart series={oneRMSeries} />
+                  </div>
+                  <div className="lg:col-span-1">
+                    <OverloadSuggestions suggestions={overload} />
+                  </div>
+                </div>
+              </DashSection>
+
+              <DashSection label="Analysis">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                  <div className="lg:col-span-1">
+                    <PlateauCards plateaus={plateaus} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <SessionQuality qualities={qualities} />
+                  </div>
+                </div>
+              </DashSection>
+
+              <DashSection label="Nutrition">
+                <NutritionDashboardWidget />
+              </DashSection>
+
             </div>
-
-            {/* Volume & Strength */}
-            <SectionLabel>Volume &amp; Strength</SectionLabel>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <WeeklyVolume data={weeklyVolume} />
-              </div>
-              <div className="lg:col-span-1">
-                <PersonalRecords records={personalRecords} />
-              </div>
-            </div>
-
-            {/* Progression */}
-            <SectionLabel>Progression</SectionLabel>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <OneRMChart series={oneRMSeries} />
-              </div>
-              <div className="lg:col-span-1">
-                <OverloadSuggestions suggestions={overload} />
-              </div>
-            </div>
-
-            {/* Analysis */}
-            <SectionLabel>Analysis</SectionLabel>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <div className="lg:col-span-1">
-                <PlateauCards plateaus={plateaus} />
-              </div>
-              <div className="lg:col-span-2">
-                <SessionQuality qualities={qualities} />
-              </div>
-            </div>
-
-            {/* Nutrition */}
-            <SectionLabel>Nutrition</SectionLabel>
-            <NutritionDashboardWidget />
-          </div>
+          </>
         )}
       </div>
 

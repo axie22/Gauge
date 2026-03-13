@@ -50,11 +50,15 @@ export function OneRMChart({ series }: Props) {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
-      <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-xs shadow-xl">
-        <div className="font-medium text-zinc-200 mb-1">{d.date}</div>
-        <div className="text-zinc-400">
-          Est. 1RM:{' '}
-          <span className="text-zinc-100 font-semibold">{fmtWeight(d.estimated_1rm_kg)}</span>
+      <div style={{ background: 'var(--surface-up)', border: '1px solid var(--border-up)', borderRadius: 8, padding: '10px 12px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.08em', marginBottom: 5 }}>
+          {d.date}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--accent)' }}>
+          {fmtWeight(d.estimated_1rm_kg)}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>
+          Est. 1RM
         </div>
       </div>
     );
@@ -62,8 +66,11 @@ export function OneRMChart({ series }: Props) {
 
   if (series.length === 0) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 h-full flex items-center justify-center">
-        <p className="text-sm text-zinc-500">No compound lift data found</p>
+      <div
+        className="h-full flex items-center justify-center"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }}
+      >
+        <p style={{ fontSize: 13, color: 'var(--text-3)' }}>No compound lift data found</p>
       </div>
     );
   }
@@ -72,85 +79,107 @@ export function OneRMChart({ series }: Props) {
   const yMax = chartData.length ? Math.ceil(Math.max(...chartData.map((d) => d.display)) * 1.05) : 100;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 h-full">
+    <div
+      className="h-full"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}
+    >
+      {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100">Estimated 1RM</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Epley formula · weight × (1 + reps/30)</p>
+          <h2 className="font-semibold" style={{ fontSize: 14, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>
+            Estimated 1RM
+          </h2>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.1em', marginTop: 3 }}>
+            EPLEY FORMULA
+          </p>
         </div>
         {peak && (
           <div className="text-right">
-            <div className="text-2xl font-bold text-zinc-100 tabular-nums">
+            <div
+              className="tabular-nums leading-none"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: 'var(--accent)' }}
+            >
               {fmtWeight(peak.estimated_1rm_kg)}
             </div>
-            <div className="text-xs text-zinc-500">peak on {peak.date}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', marginTop: 3 }}>
+              PEAK · {peak.date}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Exercise selector */}
-      <div className="flex gap-1.5 mb-4 flex-wrap">
-        {series.map((s) => (
-          <button
-            key={s.exercise_template_id}
-            onClick={() => setSelectedId(s.exercise_template_id)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-              selectedId === s.exercise_template_id
-                ? 'bg-indigo-600 text-white'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            {s.exercise_title.replace(/\s*\(.*?\)\s*/g, '').trim()}
-          </button>
-        ))}
+      {/* Exercise selector pills */}
+      <div className="flex gap-1.5 mb-5 flex-wrap">
+        {series.map((s) => {
+          const active = selectedId === s.exercise_template_id;
+          return (
+            <button
+              key={s.exercise_template_id}
+              onClick={() => setSelectedId(s.exercise_template_id)}
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                letterSpacing: '0.06em',
+                fontWeight: 600,
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: `1px solid ${active ? 'var(--accent-border)' : 'var(--border)'}`,
+                background: active ? 'var(--accent-dim)' : 'transparent',
+                color: active ? 'var(--accent)' : 'var(--text-3)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              {s.exercise_title.replace(/\s*\(.*?\)\s*/g, '').trim().toUpperCase()}
+            </button>
+          );
+        })}
       </div>
 
       <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+        <LineChart data={chartData} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.04)" vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#71717a', fontSize: 10 }}
+            tick={{ fill: '#464646', fontSize: 10, fontFamily: 'var(--font-mono)' }}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
             tickFormatter={(v: string) =>
               new Date(v + 'T12:00:00Z').toLocaleString('default', {
-                month: 'short',
-                day: 'numeric',
-                timeZone: 'UTC',
+                month: 'short', day: 'numeric', timeZone: 'UTC',
               })
             }
           />
           <YAxis
             domain={[yMin, yMax]}
-            tick={{ fill: '#71717a', fontSize: 10 }}
+            tick={{ fill: '#464646', fontSize: 10, fontFamily: 'var(--font-mono)' }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => Math.round(v).toString()}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
           {peak && (
             <ReferenceLine
               y={peak.display}
-              stroke="#6366f1"
+              stroke="rgba(0,180,255,0.25)"
               strokeDasharray="4 2"
-              label={{ value: `PR ${fmtWeight(peak.estimated_1rm_kg)}`, fill: '#818cf8', fontSize: 10, position: 'right' }}
+              label={{ value: `PR ${fmtWeight(peak.estimated_1rm_kg)}`, fill: '#464646', fontSize: 10, fontFamily: 'var(--font-mono)', position: 'right' }}
             />
           )}
           <Line
             type="monotone"
             dataKey="display"
-            stroke="#6366f1"
+            stroke="#00B4FF"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: '#6366f1' }}
+            activeDot={{ r: 4, fill: '#00B4FF', strokeWidth: 0 }}
           />
         </LineChart>
       </ResponsiveContainer>
 
-      <div className="mt-2 text-xs text-zinc-600 text-right">
-        Y axis in {unit}
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', textAlign: 'right', marginTop: 6, letterSpacing: '0.06em' }}>
+        Y AXIS IN {unit.toUpperCase()}
       </div>
     </div>
   );

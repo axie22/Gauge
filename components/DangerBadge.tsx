@@ -3,19 +3,29 @@ interface DangerBadgeProps {
   label: string;
 }
 
-const styles: Record<DangerBadgeProps['level'], string> = {
-  danger: 'bg-red-900/60 text-red-300 border-red-700',
-  warning: 'bg-amber-900/60 text-amber-300 border-amber-700',
-  ok: 'bg-emerald-900/60 text-emerald-300 border-emerald-700',
-  info: 'bg-zinc-800 text-zinc-400 border-zinc-700',
+const styles: Record<DangerBadgeProps['level'], React.CSSProperties> = {
+  danger:  { background: 'var(--red-dim)',   color: 'var(--red)',   border: '1px solid rgba(248,113,113,0.25)' },
+  warning: { background: 'var(--amber-dim)', color: 'var(--amber)', border: '1px solid rgba(251,191,36,0.25)' },
+  ok:      { background: 'var(--green-dim)', color: 'var(--green)', border: '1px solid rgba(52,211,153,0.25)' },
+  info:    { background: 'var(--surface-up)', color: 'var(--text-2)', border: '1px solid var(--border-up)' },
 };
 
 export function DangerBadge({ level, label }: DangerBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${styles[level]}`}
+      style={{
+        ...styles[level],
+        fontFamily: 'var(--font-mono)',
+        fontSize: 9,
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        padding: '3px 7px',
+        borderRadius: 4,
+        display: 'inline-flex',
+        alignItems: 'center',
+      }}
     >
-      {label}
+      {label.toUpperCase()}
     </span>
   );
 }
