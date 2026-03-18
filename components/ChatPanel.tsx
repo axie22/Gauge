@@ -17,15 +17,22 @@ interface Props {
   balance: BalanceResult;
   nutritionSummary?: string;
   profileSummary?: string | null;
+  whoopSummary?: string | null;
 }
 
-const STARTER_QUESTIONS = [
+const STARTER_QUESTIONS_BASE = [
   'Am I overtraining any muscle groups?',
   'What should I focus on to break my biggest plateau?',
   'How is my push/pull balance looking?',
   'Plan me a deload week based on my recent training',
   'Is my protein intake supporting my training volume?',
   'How does my nutrition correlate with my session quality?',
+];
+
+const STARTER_QUESTIONS_WHOOP = [
+  'What does my HRV trend tell you about my recovery?',
+  'Should I train hard today based on my recovery score?',
+  'How does my sleep quality correlate with my session performance?',
 ];
 
 function buildSystemPrompt(
@@ -35,6 +42,7 @@ function buildSystemPrompt(
   balance: BalanceResult,
   nutritionSummary?: string,
   profileSummary?: string | null,
+  whoopSummary?: string | null,
 ): string {
   const readinessWarnings = readiness
     .filter((r) => r.status === 'fatigued' || r.status === 'overtrained')
@@ -54,11 +62,16 @@ function buildSystemPrompt(
     ? `\n\nUSER PROFILE:\n${profileSummary}`
     : '';
 
-  return `You are a knowledgeable strength and conditioning coach with access to the user's complete training history and nutrition log. Your role is to analyze their data and provide specific, actionable coaching advice.
+  const whoopSection = whoopSummary
+    ? `\n\n${whoopSummary}`
+    : '';
+
+  return `You are a knowledgeable strength and conditioning coach with access to the user's complete training history, biometric data from their WHOOP wearable, and nutrition log. Your role is to analyze their data and provide specific, actionable coaching advice.
 
 IMPORTANT RULES:
 - Always base your answers on the training data provided below
 - Be specific: reference actual exercises, dates, weights, and trends from the data
+- When WHOOP biometric data is available, use HRV, recovery score, and sleep quality to contextualize performance and readiness advice
 - When nutrition data is available, incorporate it into recovery and performance advice
 - If a question cannot be answered from the data, say so clearly
 - Keep responses concise (under 300 words) unless a detailed plan is requested
@@ -73,10 +86,10 @@ COMPUTED METRICS:
 - Muscle readiness flags: ${readinessWarnings}
 - Plateau flags: ${plateauWarnings}
 - Push/Pull ratio (30d): ${balance.push_pull_ratio.toFixed(2)}
-- Quad/Hip ratio (30d): ${balance.quad_hip_ratio.toFixed(2)}${nutritionSection}${profileSection}`;
+- Quad/Hip ratio (30d): ${balance.quad_hip_ratio.toFixed(2)}${nutritionSection}${profileSection}${whoopSection}`;
 }
 
-export function ChatPanel({ summary, readiness, plateaus, balance, nutritionSummary, profileSummary }: Props) {
+export function ChatPanel({ summary, readiness, plateaus, balance, nutritionSummary, profileSummary, whoopSummary }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -89,7 +102,11 @@ export function ChatPanel({ summary, readiness, plateaus, balance, nutritionSumm
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const systemPrompt = buildSystemPrompt(summary, readiness, plateaus, balance, nutritionSummary, profileSummary);
+  const starterQuestions = whoopSummary
+    ? [...STARTER_QUESTIONS_BASE.slice(0, 3), ...STARTER_QUESTIONS_WHOOP]
+    : STARTER_QUESTIONS_BASE;
+
+  const systemPrompt = buildSystemPrompt(summary, readiness, plateaus, balance, nutritionSummary, profileSummary, whoopSummary);
 
   async function sendMessage(content: string) {
     if (!content.trim() || isStreaming) return;
@@ -227,7 +244,7 @@ export function ChatPanel({ summary, readiness, plateaus, balance, nutritionSumm
               </p>
               <div className="space-y-2">
                 <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">Suggested questions</p>
-                {STARTER_QUESTIONS.map((q) => (
+                {starterQuestions.map((q) => (
                   <button
                     key={q}
                     onClick={() => sendMessage(q)}

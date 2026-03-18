@@ -106,7 +106,7 @@ async function _fetchWhoopRecovery(): Promise<WhoopRecoveryData | null> {
 export const getCachedWhoopRecovery = unstable_cache(
   _fetchWhoopRecovery,
   ['whoop-recovery'],
-  { revalidate: 1800 }, // 30 min — recovery posts once/day but refresh tokens need to work
+  { revalidate: 1800, tags: ['whoop-recovery'] },
 );
 
 export interface WhoopWorkoutData {
@@ -140,7 +140,7 @@ async function _fetchWhoopWorkouts(days = 90): Promise<WhoopWorkoutData | null> 
 export const getCachedWhoopWorkouts = unstable_cache(
   _fetchWhoopWorkouts,
   ['whoop-workouts'],
-  { revalidate: 3600 }, // 1 hour
+  { revalidate: 3600, tags: ['whoop-workouts'] },
 );
 
 async function _fetchWhoopSleep(days = 30): Promise<WhoopSleep[]> {
@@ -169,7 +169,7 @@ async function _fetchWhoopSleep(days = 30): Promise<WhoopSleep[]> {
 export const getCachedWhoopSleep = unstable_cache(
   _fetchWhoopSleep,
   ['whoop-sleep'],
-  { revalidate: 1800 },
+  { revalidate: 1800, tags: ['whoop-sleep'] },
 );
 
 // ─── Deduplication ──────────────────────────────────────────────────────────
