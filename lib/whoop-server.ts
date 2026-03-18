@@ -6,10 +6,11 @@ import {
   WhoopRecovery,
   WhoopWorkout,
   WhoopSleep,
+  STRENGTH_SPORT_IDS,
   refreshAccessToken,
-  whoopFetch,
   whoopFetchAll,
 } from './whoop';
+import { EnrichedWorkout } from './hevy';
 
 const TOKEN_PATH = path.join(process.cwd(), 'data', 'whoop-tokens.json');
 
@@ -81,7 +82,7 @@ async function _fetchWhoopRecovery(): Promise<WhoopRecoveryData | null> {
 
   try {
     const records = await whoopFetchAll<WhoopRecovery>(
-      '/v2/activity/recovery',
+      '/v2/recovery',
       token,
       {
         start: start.toISOString(),
@@ -170,6 +171,68 @@ export const getCachedWhoopSleep = unstable_cache(
   ['whoop-sleep'],
   { revalidate: 1800 },
 );
+
+// ─── Deduplication ──────────────────────────────────────────────────────────
+
+function overlapFraction(
+  aStart: number, aEnd: number,
+  bStart: number, bEnd: number,
+): number {
+  const overlapMs = Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
+  const shorter = Math.min(aEnd - aStart, bEnd - bStart);
+  return shorter > 0 ? overlapMs / shorter : 0;
+}
+
+/**
+ * Attaches Whoop biometric data to Hevy workouts that overlap in time.
+ * Hevy is the source of truth for exercises/sets/weights.
+ * Whoop is the source of truth for HR, strain, and calories.
+ */
+export function deduplicateAndEnrich(
+  hevyWorkouts: EnrichedWorkout[],
+  whoopWorkouts: WhoopWorkout[],
+): EnrichedWorkout[] {
+  // Only consider strength-type Whoop workouts with a valid score
+  const candidates = whoopWorkouts.filter(
+    (w) => STRENGTH_SPORT_IDS.has(w.sport_id) && w.score_state === 'SCORED' && w.score,
+  );
+
+  const matched = new Set<string>();
+
+  return hevyWorkouts.map((hevy) => {
+    const hStart = new Date(hevy.start_time).getTime();
+    const hEnd = new Date(hevy.end_time).getTime();
+
+    let bestMatch: WhoopWorkout | null = null;
+    let bestOverlap = 0;
+
+    for (const whoop of candidates) {
+      if (matched.has(whoop.id)) continue;
+      const wStart = new Date(whoop.start).getTime();
+      const wEnd = new Date(whoop.end).getTime();
+      const overlap = overlapFraction(hStart, hEnd, wStart, wEnd);
+      if (overlap >= 0.5 && overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestMatch = whoop;
+      }
+    }
+
+    if (!bestMatch?.score) return hevy;
+    matched.add(bestMatch.id);
+
+    const s = bestMatch.score;
+    return {
+      ...hevy,
+      whoop_biometrics: {
+        strain: s.strain,
+        avg_heart_rate: s.average_heart_rate,
+        max_heart_rate: s.max_heart_rate,
+        kilojoule: s.kilojoule,
+        zone_duration: s.zone_duration,
+      },
+    };
+  });
+}
 
 // ─── AI Coach Summary ────────────────────────────────────────────────────────
 

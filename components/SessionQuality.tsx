@@ -12,11 +12,16 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { SessionQualityResult } from '@/lib/hevy';
+import { WhoopRecovery } from '@/lib/whoop';
 
-type ChartPoint = SessionQualityResult & { rolling_avg: number };
+type ChartPoint = SessionQualityResult & {
+  rolling_avg: number;
+  recovery_normalized: number | null; // recovery score / 10 to fit 0-10 scale
+};
 
 interface Props {
   qualities: SessionQualityResult[];
+  recoveryRecords?: WhoopRecovery[];
 }
 
 function scoreColor(score: number): string {
@@ -67,29 +72,40 @@ const CustomTooltip = ({
             {d.rolling_avg.toFixed(1)}
           </span>
         </div>
-        <div className="flex justify-between gap-6">
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Density</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{d.density_score.toFixed(1)}</span>
-        </div>
-        <div className="flex justify-between gap-6">
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Completeness</span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{d.completeness_score.toFixed(1)}</span>
-        </div>
+        {d.recovery_normalized !== null && (
+          <div className="flex justify-between gap-6">
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Recovery</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)' }}>
+              {Math.round(d.recovery_normalized * 10)}%
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export function SessionQuality({ qualities }: Props) {
+export function SessionQuality({ qualities, recoveryRecords }: Props) {
   const recent = qualities.slice(-60);
 
   const chartData = useMemo<ChartPoint[]>(() => {
     return recent.map((q, i) => {
       const window = recent.slice(Math.max(0, i - 6), i + 1);
       const avg = window.reduce((s, w) => s + w.score, 0) / window.length;
-      return { ...q, rolling_avg: Math.round(avg * 10) / 10 };
+
+      // Match recovery record by date — Whoop posts recovery the morning of that day
+      const recovery = recoveryRecords?.find(
+        (r) => r.created_at.slice(0, 10) === q.date && r.score_state === 'SCORED' && r.score,
+      );
+      const recovery_normalized = recovery?.score
+        ? Math.round(recovery.score.recovery_score) / 10
+        : null;
+
+      return { ...q, rolling_avg: Math.round(avg * 10) / 10, recovery_normalized };
     });
-  }, [recent]);
+  }, [recent, recoveryRecords]);
+
+  const hasRecoveryData = chartData.some((d) => d.recovery_normalized !== null);
 
   const avgScore =
     recent.length > 0
@@ -100,6 +116,28 @@ export function SessionQuality({ qualities }: Props) {
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
+      {hasRecoveryData && (
+        <div className="flex items-center gap-4 mb-3">
+          {[
+            { color: '#00B4FF', label: '7-session avg', dash: false },
+            { color: 'var(--green)', label: 'Whoop recovery (normalized)', dash: true },
+          ].map(({ color, label, dash }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <svg width="16" height="8">
+                <line
+                  x1="0" y1="4" x2="16" y2="4"
+                  stroke={color}
+                  strokeWidth="1.5"
+                  strokeDasharray={dash ? '4 2' : undefined}
+                />
+              </svg>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-3)', letterSpacing: '0.08em' }}>
+                {label.toUpperCase()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-semibold" style={{ fontSize: 14, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>
@@ -163,6 +201,18 @@ export function SessionQuality({ qualities }: Props) {
               dot={false}
               activeDot={false}
             />
+            {hasRecoveryData && (
+              <Line
+                type="monotone"
+                dataKey="recovery_normalized"
+                stroke="var(--green)"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                dot={false}
+                activeDot={false}
+                connectNulls={false}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       )}

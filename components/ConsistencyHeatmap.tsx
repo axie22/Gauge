@@ -97,6 +97,77 @@ function WorkoutDetail({
             >×</button>
           </div>
 
+          {/* Whoop biometrics — shown when workout was matched */}
+          {w.whoop_biometrics && (() => {
+            const b = w.whoop_biometrics!;
+            const kcal = Math.round(b.kilojoule * 0.239);
+            const totalZoneMs = Object.values(b.zone_duration).reduce((s, v) => s + v, 0);
+            const zones = [
+              { ms: b.zone_duration.zone_one_milli,   color: '#3b82f6' },
+              { ms: b.zone_duration.zone_two_milli,   color: 'var(--green)' },
+              { ms: b.zone_duration.zone_three_milli, color: 'var(--amber)' },
+              { ms: b.zone_duration.zone_four_milli,  color: '#f97316' },
+              { ms: b.zone_duration.zone_five_milli,  color: 'var(--red)' },
+            ].filter((z) => z.ms > 0);
+            const strainColor =
+              b.strain >= 18 ? 'var(--red)' :
+              b.strain >= 14 ? 'var(--amber)' :
+              b.strain >= 10 ? 'var(--green)' : 'var(--text-2)';
+            return (
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--accent-dim)' }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <circle cx="5" cy="5" r="4" stroke="var(--accent)" strokeWidth="1.2" />
+                    <circle cx="5" cy="5" r="1.8" fill="var(--accent)" />
+                  </svg>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent)', letterSpacing: '0.1em', fontWeight: 700 }}>
+                    WHOOP DATA
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-3 mb-3">
+                  {[
+                    { label: 'STRAIN', value: b.strain.toFixed(1), color: strainColor },
+                    { label: 'AVG HR', value: `${b.avg_heart_rate}`, unit: 'bpm' },
+                    { label: 'MAX HR', value: `${b.max_heart_rate}`, unit: 'bpm' },
+                    { label: 'CALORIES', value: `${kcal}`, unit: 'kcal' },
+                  ].map(({ label, value, unit, color }) => (
+                    <div key={label}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-3)', letterSpacing: '0.1em', marginBottom: 2 }}>{label}</div>
+                      <div className="tabular-nums" style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: color ?? 'var(--text-1)' }}>
+                        {value}{unit && <span style={{ fontSize: 9, fontWeight: 400, color: 'var(--text-3)', marginLeft: 2 }}>{unit}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {zones.length > 0 && (
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-3)', letterSpacing: '0.1em', marginBottom: 4 }}>HR ZONES</div>
+                    <div className="flex gap-0.5 rounded overflow-hidden" style={{ height: 6 }}>
+                      {zones.map((z, i) => (
+                        <div
+                          key={i}
+                          style={{ width: `${(z.ms / totalZoneMs) * 100}%`, background: z.color, minWidth: 2 }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex gap-3 mt-1.5">
+                      {['Z1','Z2','Z3','Z4','Z5'].map((label, i) => {
+                        const z = zones[i];
+                        if (!z || z.ms === 0) return null;
+                        const mins = Math.round(z.ms / 60000);
+                        return (
+                          <span key={label} style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-3)' }}>
+                            <span style={{ color: z.color }}>{label}</span> {mins}m
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Exercise list */}
           <div style={{ maxHeight: 272, overflowY: 'auto' }}>
             {w.exercises.map((ex) => {

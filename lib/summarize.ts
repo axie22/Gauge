@@ -15,6 +15,7 @@ export function summarizeWorkouts(
   nutritionSummary?: string,
   profileSummary?: string | null,
   readiness?: MuscleReadiness[],
+  whoopSummary?: string | null,
 ): string {
   const now = new Date();
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400000);
@@ -73,6 +74,11 @@ export function summarizeWorkouts(
   } else {
     for (const w of recentSessions) {
       lines.push(`${w.date} — ${w.title} (${w.duration_minutes} min, ${Math.round(w.total_volume_kg)} kg total)`);
+      if (w.whoop_biometrics) {
+        const b = w.whoop_biometrics;
+        const kcal = Math.round(b.kilojoule * 0.239);
+        lines.push(`  ↳ Whoop: strain ${b.strain.toFixed(1)} | avg HR ${b.avg_heart_rate}bpm | max HR ${b.max_heart_rate}bpm | ${kcal} kcal`);
+      }
       for (const ex of w.exercises) {
         const working = ex.sets.filter((s) => s.is_working_set);
         if (working.length === 0) continue;
@@ -148,6 +154,11 @@ export function summarizeWorkouts(
     lines.push('');
     lines.push(`=== USER PROFILE ===`);
     lines.push(profileSummary);
+  }
+
+  if (whoopSummary) {
+    lines.push('');
+    lines.push(whoopSummary);
   }
 
   return lines.join('\n');

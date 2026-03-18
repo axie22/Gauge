@@ -29,7 +29,7 @@ import { NutritionDashboardWidget } from '@/components/NutritionDashboardWidget'
 import { VolumeStatCard } from '@/components/VolumeStatCard';
 import { ChatPanel } from '@/components/ChatPanel';
 import { WhoopRecoveryCard } from '@/components/WhoopRecoveryCard';
-import { getCachedWhoopRecovery } from '@/lib/whoop-server';
+import { getCachedWhoopRecovery, getCachedWhoopWorkouts, deduplicateAndEnrich, summarizeWhoopRecovery } from '@/lib/whoop-server';
 
 function DashSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -75,14 +75,21 @@ export default async function DashboardPage() {
   const overload          = computeOverloadSuggestions(workouts);
   const oneRMSeries       = computeOneRMSeries(workouts);
   const consistency       = computeConsistencyScore(workouts);
-  const [nutritionLog, profile, whoopRecovery] = await Promise.all([
+  const [nutritionLog, profile, whoopRecovery, whoopWorkoutsData] = await Promise.all([
     readNutritionLogServer(),
     readProfileServer(),
     getCachedWhoopRecovery(),
+    getCachedWhoopWorkouts(),
   ]);
+
+  // Enrich Hevy workouts with Whoop biometrics where sessions overlap in time
+  const whoopEnrichedWorkouts = whoopWorkoutsData
+    ? deduplicateAndEnrich(workouts, whoopWorkoutsData.workouts)
+    : workouts;
   const nutritionSummary  = summarizeNutrition(nutritionLog);
   const profileSummary    = summarizeProfile(profile);
-  const summary     = summarizeWorkouts(workouts, acwr, plateaus, balance, nutritionSummary, profileSummary, readiness);
+  const whoopSummary      = whoopRecovery ? summarizeWhoopRecovery(whoopRecovery) : null;
+  const summary     = summarizeWorkouts(whoopEnrichedWorkouts, acwr, plateaus, balance, nutritionSummary, profileSummary, readiness, whoopSummary);
 
   // Stats bar computation — UTC date strings
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -204,7 +211,7 @@ export default async function DashboardPage() {
               <DashSection label="Consistency">
                 <ConsistencyHeatmap
                   days={heatmap}
-                  workouts={workouts}
+                  workouts={whoopEnrichedWorkouts}
                   currentStreak={streaks.current_streak}
                   longestStreak={streaks.longest_streak}
                   avgGapDays={streaks.avg_gap_days}
@@ -250,7 +257,10 @@ export default async function DashboardPage() {
                     <PlateauCards plateaus={plateaus} />
                   </div>
                   <div className="lg:col-span-2">
-                    <SessionQuality qualities={qualities} />
+                    <SessionQuality
+                      qualities={qualities}
+                      recoveryRecords={whoopRecovery?.recent}
+                    />
                   </div>
                 </div>
               </DashSection>

@@ -91,6 +91,7 @@ export interface EnrichedWorkout {
   total_volume_kg: number;
   duration_minutes: number;
   date: string; // YYYY-MM-DD
+  whoop_biometrics?: WhoopBiometrics; // present when matched to a Whoop workout
 }
 
 // ─── Analytics Output Types ──────────────────────────────────────────────────
@@ -152,6 +153,22 @@ export interface PersonalRecord {
   best_weight_kg: number;
   best_date: string; // YYYY-MM-DD when PR was set
   is_recent: boolean; // true if best_date is within last 30 days
+}
+
+// Whoop biometric data attached to a matched Hevy workout
+export interface WhoopBiometrics {
+  strain: number;           // 0–21
+  avg_heart_rate: number;   // bpm
+  max_heart_rate: number;   // bpm
+  kilojoule: number;
+  zone_duration: {
+    zone_zero_milli: number;
+    zone_one_milli: number;
+    zone_two_milli: number;
+    zone_three_milli: number;
+    zone_four_milli: number;
+    zone_five_milli: number;
+  };
 }
 
 export interface MuscleReadiness {
