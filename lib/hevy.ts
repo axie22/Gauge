@@ -1,16 +1,16 @@
-import { unstable_cache } from 'next/cache';
+import { unstable_cache } from "next/cache";
 
-const BASE = 'https://api.hevyapp.com';
+const BASE = "https://api.hevyapp.com";
 const PAGE_SIZE = 10;
 const MAX_PAGES = 500;
 
 // ─── Raw API Types ──────────────────────────────────────────────────────────
 
-export type SetType = 'normal' | 'warmup' | 'dropset' | 'failure' | 'myorep';
+export type SetType = "normal" | "warmup" | "dropset" | "failure" | "myorep";
 
 export interface HevySet {
   index: number;
-  type: SetType;       // API field is "type" not "set_type"
+  type: SetType;
   weight_kg: number | null;
   reps: number | null;
   distance_meters: number | null;
@@ -23,7 +23,7 @@ export interface HevyExercise {
   title: string;
   notes: string | null;
   exercise_template_id: string;
-  superset_id: number | null;   // API field is "superset_id" not "supersets_id"
+  superset_id: number | null;
   sets: HevySet[];
 }
 
@@ -31,8 +31,8 @@ export interface HevyWorkout {
   id: string;
   title: string;
   description: string | null;
-  start_time: string; // ISO 8601
-  end_time: string;   // ISO 8601
+  start_time: string;
+  end_time: string;
   updated_at: string;
   created_at: string;
   exercises: HevyExercise[];
@@ -100,17 +100,17 @@ export interface AcwrResult {
   acute_load: number;
   chronic_load: number;
   ratio: number;
-  status: 'danger' | 'optimal' | 'undertrained' | 'insufficient_data';
+  status: "danger" | "optimal" | "undertrained" | "insufficient_data";
 }
 
 export interface PlateauResult {
   exercise_title: string;
   exercise_template_id: string;
   stall_weeks: number;
-  metric: 'weight' | 'volume' | 'reps';
+  metric: "weight" | "volume" | "reps";
   last_best: number;
   is_deload: boolean;
-  risk: 'high' | 'medium' | 'none';
+  risk: "high" | "medium" | "none";
 }
 
 export interface BalanceResult {
@@ -140,33 +140,33 @@ export interface HeatmapDay {
 }
 
 export interface WeeklyVolumePoint {
-  week: string;          // YYYY-MM-DD, always a Monday (UTC)
+  week: string; // YYYY-MM-DD, always a Monday (UTC)
   volume_kg: number;
   workout_count: number;
-  is_current: boolean;   // true if this week contains today
+  is_current: boolean; // true if this week contains today
 }
 
 export interface PersonalRecord {
   exercise_template_id: string;
   exercise_title: string;
   best_weight_kg: number;
-  best_date: string;     // YYYY-MM-DD when PR was set
-  is_recent: boolean;    // true if best_date is within last 30 days
+  best_date: string; // YYYY-MM-DD when PR was set
+  is_recent: boolean; // true if best_date is within last 30 days
 }
 
 export interface MuscleReadiness {
   muscle_group: string;
-  fitness: number;       // CTL signal — cumulative adaptation
-  fatigue: number;       // ATL signal — acute fatigue
-  form: number;          // fitness - fatigue
-  readiness: number;     // 0–100 normalized score
-  status: 'fresh' | 'optimal' | 'fatigued' | 'overtrained';
+  fitness: number; // CTL signal — cumulative adaptation
+  fatigue: number; // ATL signal — acute fatigue
+  form: number; // fitness - fatigue
+  readiness: number; // 0–100 normalized score
+  status: "fresh" | "optimal" | "fatigued" | "overtrained";
 }
 
 export interface OverloadSuggestion {
   exercise_template_id: string;
   exercise_title: string;
-  suggestion: 'add_weight' | 'add_rep' | 'deload' | 'maintain';
+  suggestion: "add_weight" | "add_rep" | "deload" | "maintain";
   rationale: string;
   last_weight_kg: number;
   suggested_weight_kg: number | null;
@@ -174,19 +174,19 @@ export interface OverloadSuggestion {
 }
 
 export interface OneRMPoint {
-  date: string;               // YYYY-MM-DD
+  date: string; // YYYY-MM-DD
   estimated_1rm_kg: number;
 }
 
 export interface OneRMSeries {
   exercise_template_id: string;
   exercise_title: string;
-  points: OneRMPoint[];       // sorted by date ascending
+  points: OneRMPoint[]; // sorted by date ascending
 }
 
 export interface ConsistencyWeek {
-  week: string;               // YYYY-MM-DD Monday
-  score: number;              // 0–100
+  week: string; // YYYY-MM-DD Monday
+  score: number; // 0–100
   push_hit: boolean;
   pull_hit: boolean;
   quad_hit: boolean;
@@ -202,30 +202,30 @@ export interface ConsistencyResult {
 // ─── Muscle Group Normalization ──────────────────────────────────────────────
 
 const MUSCLE_ALIASES: Record<string, string> = {
-  quadriceps: 'quads',
-  'quads': 'quads',
-  hamstrings: 'hamstrings',
-  glutes: 'glutes',
-  'lower back': 'lower_back',
-  'lower_back': 'lower_back',
-  'upper back': 'back',
-  back: 'back',
-  lats: 'back',
-  chest: 'chest',
-  shoulders: 'shoulders',
-  delts: 'shoulders',
-  'front delts': 'shoulders',
-  'rear delts': 'rear_delts',
-  triceps: 'triceps',
-  biceps: 'biceps',
-  abs: 'abs',
-  core: 'abs',
-  calves: 'calves',
-  'hip flexors': 'hip_flexors',
-  traps: 'traps',
-  forearms: 'forearms',
-  'full body': 'full_body',
-  cardio: 'cardio',
+  quadriceps: "quads",
+  quads: "quads",
+  hamstrings: "hamstrings",
+  glutes: "glutes",
+  "lower back": "lower_back",
+  lower_back: "lower_back",
+  "upper back": "back",
+  back: "back",
+  lats: "back",
+  chest: "chest",
+  shoulders: "shoulders",
+  delts: "shoulders",
+  "front delts": "shoulders",
+  "rear delts": "rear_delts",
+  triceps: "triceps",
+  biceps: "biceps",
+  abs: "abs",
+  core: "abs",
+  calves: "calves",
+  "hip flexors": "hip_flexors",
+  traps: "traps",
+  forearms: "forearms",
+  "full body": "full_body",
+  cardio: "cardio",
 };
 
 export function normalizeMuscle(raw: string): string {
@@ -237,7 +237,7 @@ export function normalizeMuscle(raw: string): string {
 
 async function fetchAllWorkouts(): Promise<HevyWorkout[]> {
   const apiKey = process.env.HEVY_API_KEY;
-  if (!apiKey) throw new Error('HEVY_API_KEY is not set');
+  if (!apiKey) throw new Error("HEVY_API_KEY is not set");
 
   const all: HevyWorkout[] = [];
   let page = 1;
@@ -246,9 +246,9 @@ async function fetchAllWorkouts(): Promise<HevyWorkout[]> {
     const res = await fetch(
       `${BASE}/v1/workouts?page=${page}&pageSize=${PAGE_SIZE}`,
       {
-        headers: { 'api-key': apiKey },
+        headers: { "api-key": apiKey },
         next: { revalidate: 7200 },
-      }
+      },
     );
     if (!res.ok) throw new Error(`Hevy API error: ${res.status}`);
     const data: HevyWorkoutsResponse = await res.json();
@@ -262,7 +262,7 @@ async function fetchAllWorkouts(): Promise<HevyWorkout[]> {
 
 async function fetchAllExerciseTemplates(): Promise<HevyExerciseTemplate[]> {
   const apiKey = process.env.HEVY_API_KEY;
-  if (!apiKey) throw new Error('HEVY_API_KEY is not set');
+  if (!apiKey) throw new Error("HEVY_API_KEY is not set");
 
   const all: HevyExerciseTemplate[] = [];
   let page = 1;
@@ -271,9 +271,9 @@ async function fetchAllExerciseTemplates(): Promise<HevyExerciseTemplate[]> {
     const res = await fetch(
       `${BASE}/v1/exercise_templates?page=${page}&pageSize=${PAGE_SIZE}`,
       {
-        headers: { 'api-key': apiKey },
+        headers: { "api-key": apiKey },
         next: { revalidate: 7200 },
-      }
+      },
     );
     if (!res.ok) throw new Error(`Hevy API error: ${res.status}`);
     const data: HevyExerciseTemplatesResponse = await res.json();
@@ -287,20 +287,20 @@ async function fetchAllExerciseTemplates(): Promise<HevyExerciseTemplate[]> {
 
 export const getCachedWorkouts = unstable_cache(
   fetchAllWorkouts,
-  ['hevy-workouts'],
-  { revalidate: 7200, tags: ['hevy'] }
+  ["hevy-workouts"],
+  { revalidate: 7200, tags: ["hevy"] },
 );
 
 export const getCachedTemplates = unstable_cache(
   fetchAllExerciseTemplates,
-  ['hevy-templates'],
-  { revalidate: 7200, tags: ['hevy'] }
+  ["hevy-templates"],
+  { revalidate: 7200, tags: ["hevy"] },
 );
 
 // ─── Template Map ────────────────────────────────────────────────────────────
 
 export function buildTemplateMap(
-  templates: HevyExerciseTemplate[]
+  templates: HevyExerciseTemplate[],
 ): Map<string, HevyExerciseTemplate> {
   return new Map(templates.map((t) => [t.id, t]));
 }
@@ -309,42 +309,38 @@ export function buildTemplateMap(
 
 export function enrichWorkouts(
   raw: HevyWorkout[],
-  templateMap: Map<string, HevyExerciseTemplate>
+  templateMap: Map<string, HevyExerciseTemplate>,
 ): EnrichedWorkout[] {
   return raw
     .map((workout) => {
       const exercises: EnrichedExercise[] = workout.exercises.map((ex) => {
         const template = templateMap.get(ex.exercise_template_id);
         const rawMuscles: string[] = template
-          ? [
-              template.primary_muscle_group,
-              ...template.secondary_muscle_groups,
-            ]
+          ? [template.primary_muscle_group, ...template.secondary_muscle_groups]
           : [];
         const muscle_groups = [...new Set(rawMuscles.map(normalizeMuscle))];
 
         const sets: EnrichedSet[] = ex.sets.map((s) => {
           const is_working_set =
-            s.type === 'normal' ||
-            s.type === 'failure' ||
-            s.type === 'dropset' ||
-            s.type === 'myorep';
-          const volume_kg =
-            is_working_set
-              ? (s.weight_kg ?? 0) * (s.reps ?? 0)
-              : 0;
+            s.type === "normal" ||
+            s.type === "failure" ||
+            s.type === "dropset" ||
+            s.type === "myorep";
+          const volume_kg = is_working_set
+            ? (s.weight_kg ?? 0) * (s.reps ?? 0)
+            : 0;
           return { ...s, volume_kg, is_working_set };
         });
 
         const working_sets = sets.filter((s) => s.is_working_set);
         const total_volume_kg = working_sets.reduce(
           (sum, s) => sum + s.volume_kg,
-          0
+          0,
         );
         const working_set_count = working_sets.length;
         const top_set_weight_kg = Math.max(
           0,
-          ...working_sets.map((s) => s.weight_kg ?? 0)
+          ...working_sets.map((s) => s.weight_kg ?? 0),
         );
 
         return {
@@ -363,7 +359,7 @@ export function enrichWorkouts(
 
       const total_volume_kg = exercises.reduce(
         (sum, e) => sum + e.total_volume_kg,
-        0
+        0,
       );
       const start = new Date(workout.start_time).getTime();
       const end = new Date(workout.end_time).getTime();

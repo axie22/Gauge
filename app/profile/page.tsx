@@ -1,26 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { fetchProfile, saveProfile, UserProfile } from '@/lib/profile';
-import { useUnits } from '@/lib/units';
+import { useState, useEffect } from "react";
+import { fetchProfile, saveProfile, UserProfile } from "@/lib/profile";
+import { useUnits } from "@/lib/units";
 
 const TRAINING_GOALS = [
-  { value: 'strength', label: 'Strength', desc: 'Maximize lifts (1RM focus)' },
-  { value: 'hypertrophy', label: 'Hypertrophy', desc: 'Build muscle size' },
-  { value: 'fat_loss', label: 'Fat Loss', desc: 'Reduce body fat' },
-  { value: 'endurance', label: 'Endurance', desc: 'Improve stamina & conditioning' },
-  { value: 'general_fitness', label: 'General Fitness', desc: 'Well-rounded health' },
+  { value: "strength", label: "Strength", desc: "Maximize lifts (1RM focus)" },
+  { value: "hypertrophy", label: "Hypertrophy", desc: "Build muscle size" },
+  { value: "fat_loss", label: "Fat Loss", desc: "Reduce body fat" },
+  {
+    value: "endurance",
+    label: "Endurance",
+    desc: "Improve stamina & conditioning",
+  },
+  {
+    value: "general_fitness",
+    label: "General Fitness",
+    desc: "Well-rounded health",
+  },
 ] as const;
 
 const EXPERIENCE_LEVELS = [
-  { value: 'beginner', label: 'Beginner', desc: '< 1 year of consistent training' },
-  { value: 'intermediate', label: 'Intermediate', desc: '1–3 years' },
-  { value: 'advanced', label: 'Advanced', desc: '3+ years' },
+  {
+    value: "beginner",
+    label: "Beginner",
+    desc: "< 1 year of consistent training",
+  },
+  { value: "intermediate", label: "Intermediate", desc: "1-3 years" },
+  { value: "advanced", label: "Advanced", desc: "3+ years" },
 ] as const;
 
 function parseNum(s: string): number | null {
   const v = parseFloat(s);
-  return s.trim() !== '' && !isNaN(v) ? v : null;
+  return s.trim() !== "" && !isNaN(v) ? v : null;
 }
 
 // ─── Text input ────────────────────────────────────────────────────────────────
@@ -29,7 +41,7 @@ function TextInput({
   label,
   value,
   onChange,
-  placeholder = '',
+  placeholder = "",
 }: {
   label: string;
   value: string;
@@ -38,7 +50,9 @@ function TextInput({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-zinc-400 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        {label}
+      </label>
       <input
         type="text"
         value={value}
@@ -57,7 +71,7 @@ function NumInput({
   unit,
   value,
   onChange,
-  placeholder = '—',
+  placeholder = "—",
 }: {
   label: string;
   unit: string;
@@ -67,7 +81,9 @@ function NumInput({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-zinc-400 mb-1.5">{label}</label>
+      <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        {label}
+      </label>
       <div className="flex items-center rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 gap-2 focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-600 transition-colors">
         <input
           type="number"
@@ -102,15 +118,17 @@ export default function ProfilePage() {
   const KG_PER_LB = 0.453592;
 
   // form state — all weights stored internally in kg
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [sex, setSex] = useState<'male' | 'female' | 'other' | ''>('');
-  const [heightCm, setHeightCm] = useState('');
-  const [weightDisplay, setWeightDisplay] = useState('');  // in user's unit
-  const [goalWeightDisplay, setGoalWeightDisplay] = useState('');
-  const [trainingGoal, setTrainingGoal] = useState<UserProfile['training_goal']>(null);
-  const [experienceLevel, setExperienceLevel] = useState<UserProfile['experience_level']>(null);
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [sex, setSex] = useState<"male" | "female" | "other" | "">("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightDisplay, setWeightDisplay] = useState(""); // in user's unit
+  const [goalWeightDisplay, setGoalWeightDisplay] = useState("");
+  const [trainingGoal, setTrainingGoal] =
+    useState<UserProfile["training_goal"]>(null);
+  const [experienceLevel, setExperienceLevel] =
+    useState<UserProfile["experience_level"]>(null);
+  const [notes, setNotes] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -119,30 +137,30 @@ export default function ProfilePage() {
   function toKg(displayVal: string): number | null {
     const v = parseNum(displayVal);
     if (v === null) return null;
-    return unit === 'lbs' ? v * KG_PER_LB : v;
+    return unit === "lbs" ? v * KG_PER_LB : v;
   }
 
   // Convert kg -> display string
   function toDisplayStr(kg: number | null): string {
-    if (kg === null) return '';
-    const d = unit === 'lbs' ? kg / KG_PER_LB : kg;
+    if (kg === null) return "";
+    const d = unit === "lbs" ? kg / KG_PER_LB : kg;
     return d.toFixed(1);
   }
 
   useEffect(() => {
     fetchProfile().then((p) => {
-      setName(p.name ?? '');
-      setAge(p.age?.toString() ?? '');
-      setSex(p.sex ?? '');
-      setHeightCm(p.height_cm?.toString() ?? '');
+      setName(p.name ?? "");
+      setAge(p.age?.toString() ?? "");
+      setSex(p.sex ?? "");
+      setHeightCm(p.height_cm?.toString() ?? "");
       setWeightDisplay(toDisplayStr(p.weight_kg ?? null));
       setGoalWeightDisplay(toDisplayStr(p.goal_weight_kg ?? null));
       setTrainingGoal(p.training_goal ?? null);
       setExperienceLevel(p.experience_level ?? null);
-      setNotes(p.notes ?? '');
+      setNotes(p.notes ?? "");
       setLoading(false);
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSave() {
@@ -180,7 +198,8 @@ export default function ProfilePage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-zinc-100">Profile</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            Personal information used to personalize your dashboard and AI coaching advice
+            Personal information used to personalize your dashboard and AI
+            coaching advice
           </p>
         </div>
 
@@ -194,11 +213,23 @@ export default function ProfilePage() {
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
                 <SectionLabel>Basic Information</SectionLabel>
                 <div className="space-y-4">
-                  <TextInput label="Name" value={name} onChange={setName} placeholder="Your name" />
+                  <TextInput
+                    label="Name"
+                    value={name}
+                    onChange={setName}
+                    placeholder="Your name"
+                  />
                   <div className="grid grid-cols-2 gap-4">
-                    <NumInput label="Age" unit="years" value={age} onChange={setAge} />
+                    <NumInput
+                      label="Age"
+                      unit="years"
+                      value={age}
+                      onChange={setAge}
+                    />
                     <div>
-                      <label className="block text-xs font-medium text-zinc-400 mb-1.5">Sex</label>
+                      <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Sex
+                      </label>
                       <select
                         value={sex}
                         onChange={(e) => setSex(e.target.value as typeof sex)}
@@ -218,7 +249,12 @@ export default function ProfilePage() {
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
                 <SectionLabel>Body Metrics</SectionLabel>
                 <div className="grid grid-cols-3 gap-4">
-                  <NumInput label="Height" unit="cm" value={heightCm} onChange={setHeightCm} />
+                  <NumInput
+                    label="Height"
+                    unit="cm"
+                    value={heightCm}
+                    onChange={setHeightCm}
+                  />
                   <NumInput
                     label="Current Weight"
                     unit={weightUnit}
@@ -234,11 +270,14 @@ export default function ProfilePage() {
                 </div>
                 {bmi && (
                   <p className="mt-3 text-xs text-zinc-500">
-                    BMI: <span className="text-zinc-300 font-medium">{bmi.toFixed(1)}</span>
-                    {bmi < 18.5 && ' — Underweight'}
-                    {bmi >= 18.5 && bmi < 25 && ' — Normal'}
-                    {bmi >= 25 && bmi < 30 && ' — Overweight'}
-                    {bmi >= 30 && ' — Obese'}
+                    BMI:{" "}
+                    <span className="text-zinc-300 font-medium">
+                      {bmi.toFixed(1)}
+                    </span>
+                    {bmi < 18.5 && " — Underweight"}
+                    {bmi >= 18.5 && bmi < 25 && " — Normal"}
+                    {bmi >= 25 && bmi < 30 && " — Overweight"}
+                    {bmi >= 30 && " — Obese"}
                   </p>
                 )}
               </div>
@@ -250,14 +289,18 @@ export default function ProfilePage() {
                   {TRAINING_GOALS.map(({ value, label, desc }) => (
                     <button
                       key={value}
-                      onClick={() => setTrainingGoal(trainingGoal === value ? null : value)}
+                      onClick={() =>
+                        setTrainingGoal(trainingGoal === value ? null : value)
+                      }
                       className={`text-left rounded-xl border p-3.5 transition-all ${
                         trainingGoal === value
-                          ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/30'
-                          : 'border-zinc-700 hover:border-zinc-500 bg-zinc-950/60'
+                          ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/30"
+                          : "border-zinc-700 hover:border-zinc-500 bg-zinc-950/60"
                       }`}
                     >
-                      <div className={`text-sm font-semibold ${trainingGoal === value ? 'text-indigo-300' : 'text-zinc-200'}`}>
+                      <div
+                        className={`text-sm font-semibold ${trainingGoal === value ? "text-indigo-300" : "text-zinc-200"}`}
+                      >
                         {label}
                       </div>
                       <div className="text-xs text-zinc-500 mt-0.5">{desc}</div>
@@ -273,14 +316,20 @@ export default function ProfilePage() {
                   {EXPERIENCE_LEVELS.map(({ value, label, desc }) => (
                     <button
                       key={value}
-                      onClick={() => setExperienceLevel(experienceLevel === value ? null : value)}
+                      onClick={() =>
+                        setExperienceLevel(
+                          experienceLevel === value ? null : value,
+                        )
+                      }
                       className={`text-left rounded-xl border p-3.5 transition-all ${
                         experienceLevel === value
-                          ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/30'
-                          : 'border-zinc-700 hover:border-zinc-500 bg-zinc-950/60'
+                          ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/30"
+                          : "border-zinc-700 hover:border-zinc-500 bg-zinc-950/60"
                       }`}
                     >
-                      <div className={`text-sm font-semibold ${experienceLevel === value ? 'text-indigo-300' : 'text-zinc-200'}`}>
+                      <div
+                        className={`text-sm font-semibold ${experienceLevel === value ? "text-indigo-300" : "text-zinc-200"}`}
+                      >
                         {label}
                       </div>
                       <div className="text-xs text-zinc-500 mt-0.5">{desc}</div>
@@ -309,19 +358,25 @@ export default function ProfilePage() {
                 onClick={handleSave}
                 className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-3 transition-colors"
               >
-                {saved ? 'Saved' : 'Save Profile'}
+                {saved ? "Saved" : "Save Profile"}
               </button>
             </div>
 
             {/* Summary card — 1/3 */}
             <div className="space-y-4">
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 sticky top-22">
-                <h2 className="text-sm font-semibold text-zinc-300 mb-4">Profile Summary</h2>
+                <h2 className="text-sm font-semibold text-zinc-300 mb-4">
+                  Profile Summary
+                </h2>
 
                 {/* Identity */}
                 {(name || age || sex) && (
                   <div className="mb-4 pb-4 border-b border-zinc-800">
-                    {name && <p className="text-base font-semibold text-zinc-100">{name}</p>}
+                    {name && (
+                      <p className="text-base font-semibold text-zinc-100">
+                        {name}
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-1.5">
                       {age && (
                         <span className="text-xs bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded-full">
@@ -351,43 +406,60 @@ export default function ProfilePage() {
                   {weightDiff !== null && (
                     <Row
                       label="To goal"
-                      value={`${weightDiff > 0 ? '+' : ''}${toDisplay(Math.abs(weightDiff)).toFixed(1)} ${weightUnit}`}
-                      accent={weightDiff < 0 ? 'emerald' : weightDiff > 0 ? 'amber' : 'zinc'}
+                      value={`${weightDiff > 0 ? "+" : ""}${toDisplay(Math.abs(weightDiff)).toFixed(1)} ${weightUnit}`}
+                      accent={
+                        weightDiff < 0
+                          ? "emerald"
+                          : weightDiff > 0
+                            ? "amber"
+                            : "zinc"
+                      }
                     />
                   )}
                   {bmi && (
                     <Row
                       label="BMI"
                       value={bmi.toFixed(1)}
-                      accent={bmi < 18.5 || bmi >= 25 ? 'amber' : 'emerald'}
+                      accent={bmi < 18.5 || bmi >= 25 ? "amber" : "emerald"}
                     />
                   )}
                   {trainingGoal && (
                     <Row
                       label="Goal"
-                      value={TRAINING_GOALS.find((g) => g.value === trainingGoal)?.label ?? ''}
+                      value={
+                        TRAINING_GOALS.find((g) => g.value === trainingGoal)
+                          ?.label ?? ""
+                      }
                       accent="indigo"
                     />
                   )}
                   {experienceLevel && (
                     <Row
                       label="Level"
-                      value={EXPERIENCE_LEVELS.find((l) => l.value === experienceLevel)?.label ?? ''}
+                      value={
+                        EXPERIENCE_LEVELS.find(
+                          (l) => l.value === experienceLevel,
+                        )?.label ?? ""
+                      }
                     />
                   )}
                 </div>
 
                 {/* Empty state */}
-                {!name && !currentWeightKg && !trainingGoal && !experienceLevel && (
-                  <p className="text-xs text-zinc-600 text-center py-4">
-                    Fill in your details to see a summary
-                  </p>
-                )}
+                {!name &&
+                  !currentWeightKg &&
+                  !trainingGoal &&
+                  !experienceLevel && (
+                    <p className="text-xs text-zinc-600 text-center py-4">
+                      Fill in your details to see a summary
+                    </p>
+                  )}
 
                 {/* AI coach note */}
                 <div className="mt-6 rounded-xl bg-indigo-500/8 border border-indigo-500/15 p-3">
                   <p className="text-xs text-indigo-300 leading-relaxed">
-                    Your profile is shared with the AI coach to provide personalized training and nutrition advice.
+                    Your profile is shared with the AI coach to provide
+                    personalized training and nutrition advice.
                   </p>
                 </div>
               </div>
@@ -402,17 +474,17 @@ export default function ProfilePage() {
 function Row({
   label,
   value,
-  accent = 'zinc',
+  accent = "zinc",
 }: {
   label: string;
   value: string;
-  accent?: 'zinc' | 'emerald' | 'amber' | 'indigo';
+  accent?: "zinc" | "emerald" | "amber" | "indigo";
 }) {
   const valueClass = {
-    zinc: 'text-zinc-200',
-    emerald: 'text-emerald-400',
-    amber: 'text-amber-400',
-    indigo: 'text-indigo-300',
+    zinc: "text-zinc-200",
+    emerald: "text-emerald-400",
+    amber: "text-amber-400",
+    indigo: "text-indigo-300",
   }[accent];
 
   return (
