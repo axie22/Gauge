@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { fetchProfile, saveProfile, UserProfile } from "@/lib/profile";
 import { useUnits } from "@/lib/units";
+import { WhoopConnectButton } from "@/components/WhoopConnectButton";
 
 const TRAINING_GOALS = [
   { value: "strength", label: "Strength", desc: "Maximize lifts (1RM focus)" },
@@ -351,6 +352,12 @@ export default function ProfilePage() {
                   rows={4}
                   className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-600 resize-none transition-colors"
                 />
+              </div>
+
+              {/* Connected Devices */}
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
+                <SectionLabel>Connected Devices</SectionLabel>
+                <WhoopConnectButton />
               </div>
 
               {/* Save button */}

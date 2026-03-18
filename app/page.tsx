@@ -28,6 +28,8 @@ import { OverloadSuggestions } from '@/components/OverloadSuggestions';
 import { NutritionDashboardWidget } from '@/components/NutritionDashboardWidget';
 import { VolumeStatCard } from '@/components/VolumeStatCard';
 import { ChatPanel } from '@/components/ChatPanel';
+import { WhoopRecoveryCard } from '@/components/WhoopRecoveryCard';
+import { getCachedWhoopRecovery } from '@/lib/whoop-server';
 
 function DashSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -73,9 +75,10 @@ export default async function DashboardPage() {
   const overload          = computeOverloadSuggestions(workouts);
   const oneRMSeries       = computeOneRMSeries(workouts);
   const consistency       = computeConsistencyScore(workouts);
-  const [nutritionLog, profile] = await Promise.all([
+  const [nutritionLog, profile, whoopRecovery] = await Promise.all([
     readNutritionLogServer(),
     readProfileServer(),
+    getCachedWhoopRecovery(),
   ]);
   const nutritionSummary  = summarizeNutrition(nutritionLog);
   const profileSummary    = summarizeProfile(profile);
@@ -255,6 +258,14 @@ export default async function DashboardPage() {
               <DashSection label="Nutrition">
                 <NutritionDashboardWidget />
               </DashSection>
+
+              {whoopRecovery && (
+                <DashSection label="Biometrics">
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <WhoopRecoveryCard data={whoopRecovery} />
+                  </div>
+                </DashSection>
+              )}
 
             </div>
           </>
