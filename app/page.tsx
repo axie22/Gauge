@@ -2,62 +2,18 @@ export const dynamic = 'force-dynamic';
 
 import { getCachedWorkouts, getCachedTemplates, buildTemplateMap, enrichWorkouts } from '@/lib/hevy';
 import {
-  calculateAcwr,
-  detectPlateaus,
-  analyzeBalance,
-  scoreAllSessions,
   buildHeatmapData,
   computeStreakStats,
-  computeWeeklyVolume,
-  findPersonalRecords,
-  computeMuscleReadiness,
-  computeOverloadSuggestions,
-  computeOneRMSeries,
   computeConsistencyScore,
+  detectPlateaus,
 } from '@/lib/analytics';
-import { summarizeWorkouts } from '@/lib/summarize';
-import { readNutritionLogServer, summarizeNutrition } from '@/lib/nutrition-server';
-import { readProfileServer, summarizeProfile } from '@/lib/profile-server';
+import { readNutritionLogServer } from '@/lib/nutrition-server';
+import { getCachedWhoopRecovery, getCachedWhoopWorkouts, deduplicateAndEnrich } from '@/lib/whoop-server';
 import { ConsistencyHeatmap } from '@/components/ConsistencyHeatmap';
-import { MuscleReadinessChart } from '@/components/MuscleReadinessChart';
-import { PlateauCards } from '@/components/PlateauCards';
-import { BalanceAnalyzer } from '@/components/BalanceAnalyzer';
-import { SessionQuality } from '@/components/SessionQuality';
-import { WeeklyVolume } from '@/components/WeeklyVolume';
-import { PersonalRecords } from '@/components/PersonalRecords';
-import { OneRMChart } from '@/components/OneRMChart';
-import { OverloadSuggestions } from '@/components/OverloadSuggestions';
-import { NutritionDashboardWidget } from '@/components/NutritionDashboardWidget';
 import { VolumeStatCard } from '@/components/VolumeStatCard';
-import { ChatPanel } from '@/components/ChatPanel';
-import { WhoopRecoveryCard } from '@/components/WhoopRecoveryCard';
-import { WhoopRecoveryTrend } from '@/components/WhoopRecoveryTrend';
-import { WhoopSleepBreakdown } from '@/components/WhoopSleepBreakdown';
-import { getCachedWhoopRecovery, getCachedWhoopWorkouts, getCachedWhoopSleep, getCachedWhoopCycles, deduplicateAndEnrich, summarizeWhoopRecovery } from '@/lib/whoop-server';
-import { WhoopActivitiesLog } from '@/components/WhoopActivitiesLog';
-
-function DashSection({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <div className="flex items-center gap-4 mb-6">
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'var(--text-3)',
-            fontWeight: 600,
-          }}
-        >
-          {label}
-        </span>
-        <div className="flex-1" style={{ height: 1, background: 'var(--border)' }} />
-      </div>
-      {children}
-    </section>
-  );
-}
+import { RecoverySignalCard } from '@/components/RecoverySignalCard';
+import { NutritionStrip } from '@/components/NutritionStrip';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   const [rawWorkouts, templates] = await Promise.all([
@@ -68,35 +24,20 @@ export default async function DashboardPage() {
   const templateMap = buildTemplateMap(templates);
   const workouts = enrichWorkouts(rawWorkouts, templateMap);
 
-  const acwr        = calculateAcwr(workouts, new Date());
-  const readiness   = computeMuscleReadiness(workouts);
-  const plateaus    = detectPlateaus(workouts);
-  const balance     = analyzeBalance(workouts, 30);
-  const qualities   = scoreAllSessions(workouts);
   const heatmap     = buildHeatmapData(workouts);
   const streaks     = computeStreakStats(heatmap);
-  const weeklyVolume      = computeWeeklyVolume(workouts);
-  const personalRecords   = findPersonalRecords(workouts);
-  const overload          = computeOverloadSuggestions(workouts);
-  const oneRMSeries       = computeOneRMSeries(workouts);
-  const consistency       = computeConsistencyScore(workouts);
-  const [nutritionLog, profile, whoopRecovery, whoopWorkoutsData, whoopSleepRecords, whoopCycles] = await Promise.all([
-    readNutritionLogServer(),
-    readProfileServer(),
+  const consistency = computeConsistencyScore(workouts);
+  const plateaus    = detectPlateaus(workouts);
+
+  const [whoopRecovery, whoopWorkoutsData] = await Promise.all([
     getCachedWhoopRecovery(),
     getCachedWhoopWorkouts(),
-    getCachedWhoopSleep(),
-    getCachedWhoopCycles(),
+    readNutritionLogServer(), // fetched for cache warmup; NutritionStrip fetches client-side
   ]);
 
-  // Enrich Hevy workouts with Whoop biometrics where sessions overlap in time
   const whoopEnrichedWorkouts = whoopWorkoutsData
     ? deduplicateAndEnrich(workouts, whoopWorkoutsData.workouts)
     : workouts;
-  const nutritionSummary  = summarizeNutrition(nutritionLog);
-  const profileSummary    = summarizeProfile(profile);
-  const whoopSummary      = whoopRecovery ? summarizeWhoopRecovery(whoopRecovery) : null;
-  const summary     = summarizeWorkouts(whoopEnrichedWorkouts, acwr, plateaus, balance, nutritionSummary, profileSummary, readiness, whoopSummary);
 
   // Stats bar computation — UTC date strings
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -105,12 +46,18 @@ export default async function DashboardPage() {
   const mondayOffset = dow === 0 ? -6 : 1 - dow;
   const weekMondayDate = new Date(todayDate);
   weekMondayDate.setUTCDate(todayDate.getUTCDate() + mondayOffset);
-  const weekMondayStr  = weekMondayDate.toISOString().slice(0, 10);
-  const monthStartStr  = todayStr.slice(0, 7) + '-01';
+  const weekMondayStr = weekMondayDate.toISOString().slice(0, 10);
+  const monthStartStr = todayStr.slice(0, 7) + '-01';
   const thisWeekSessions  = workouts.filter((w) => w.date >= weekMondayStr).length;
   const thisMonthVolumeKg = workouts
     .filter((w) => w.date >= monthStartStr)
     .reduce((s, w) => s + w.total_volume_kg, 0);
+
+  const activePlateaus = plateaus.filter((p) => p.risk !== 'none');
+  const topPlateau = activePlateaus.sort((a, b) => {
+    const order = { high: 0, medium: 1, low: 2, none: 3 };
+    return order[a.risk] - order[b.risk];
+  })[0];
 
   return (
     <main style={{ background: 'var(--bg)', minHeight: '100vh', paddingTop: 48 }}>
@@ -151,16 +98,13 @@ export default async function DashboardPage() {
             className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl mt-8"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
           >
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ background: 'var(--text-3)' }}
-            />
+            <div className="w-2 h-2 rounded-full" style={{ background: 'var(--text-3)' }} />
             <div className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>No workouts found</div>
             <p className="text-xs" style={{ color: 'var(--text-3)' }}>Make sure your HEVY_API_KEY is set in .env</p>
           </div>
         ) : (
           <>
-            {/* ── HERO STATS — large typographic numbers, no cards ── */}
+            {/* ── HERO STATS ── */}
             <div style={{ borderBottom: '1px solid var(--border)' }}>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                 <div className="px-6 py-7" style={{ borderRight: '1px solid var(--border)' }}>
@@ -212,10 +156,83 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* ── DASHBOARD SECTIONS ── */}
-            <div className="py-8 space-y-16">
+            {/* ── 2-COLUMN COMMAND CENTER ── */}
+            <div className="py-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-              <DashSection label="Consistency">
+              {/* Left column: signal cards */}
+              <div className="lg:col-span-1 flex flex-col gap-4">
+
+                {/* Recovery signal */}
+                <RecoverySignalCard data={whoopRecovery} />
+
+                {/* Plateau signal */}
+                <Link
+                  href="/training"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <div
+                    style={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      padding: '16px 20px',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s',
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 9,
+                          letterSpacing: '0.14em',
+                          color: 'var(--text-3)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        PLATEAUS
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 9,
+                          letterSpacing: '0.08em',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        VIEW →
+                      </span>
+                    </div>
+                    {activePlateaus.length === 0 ? (
+                      <p style={{ fontSize: 12, color: 'var(--text-3)' }}>No active plateau alerts</p>
+                    ) : (
+                      <div>
+                        <div
+                          className="tabular-nums"
+                          style={{ fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700, color: 'var(--amber)', letterSpacing: '-0.02em' }}
+                        >
+                          {activePlateaus.length}
+                          <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-3)', marginLeft: 6 }}>
+                            {activePlateaus.length === 1 ? 'alert' : 'alerts'}
+                          </span>
+                        </div>
+                        {topPlateau && (
+                          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.04em', marginTop: 4 }}>
+                            {topPlateau.exercise_title} · {topPlateau.stall_weeks}wk stall
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+
+                {/* Nutrition strip */}
+                <NutritionStrip />
+
+              </div>
+
+              {/* Right column: consistency heatmap */}
+              <div className="lg:col-span-2">
                 <ConsistencyHeatmap
                   days={heatmap}
                   workouts={whoopEnrichedWorkouts}
@@ -223,98 +240,12 @@ export default async function DashboardPage() {
                   longestStreak={streaks.longest_streak}
                   avgGapDays={streaks.avg_gap_days}
                 />
-              </DashSection>
-
-              <DashSection label="Recovery & Readiness">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                    <MuscleReadinessChart results={readiness} />
-                  </div>
-                  <div className="lg:col-span-1">
-                    <BalanceAnalyzer workouts={workouts} initialBalance={balance} />
-                  </div>
-                </div>
-              </DashSection>
-
-              <DashSection label="Volume & Strength">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                    <WeeklyVolume data={weeklyVolume} />
-                  </div>
-                  <div className="lg:col-span-1">
-                    <PersonalRecords records={personalRecords} />
-                  </div>
-                </div>
-              </DashSection>
-
-              <DashSection label="Progression">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                    <OneRMChart series={oneRMSeries} />
-                  </div>
-                  <div className="lg:col-span-1">
-                    <OverloadSuggestions suggestions={overload} />
-                  </div>
-                </div>
-              </DashSection>
-
-              <DashSection label="Analysis">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-1">
-                    <PlateauCards plateaus={plateaus} />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <SessionQuality
-                      qualities={qualities}
-                      recoveryRecords={whoopRecovery?.recent}
-                    />
-                  </div>
-                </div>
-              </DashSection>
-
-              <DashSection label="Nutrition">
-                <NutritionDashboardWidget />
-              </DashSection>
-
-              {(whoopRecovery || whoopWorkoutsData) && (
-                <DashSection label="Biometrics">
-                  {whoopRecovery && (
-                    <>
-                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                        <WhoopRecoveryCard data={whoopRecovery} />
-                        <div className="lg:col-span-2">
-                          <WhoopRecoveryTrend data={whoopRecovery} />
-                        </div>
-                      </div>
-                      {whoopSleepRecords.length > 0 && (
-                        <div className="mt-4">
-                          <WhoopSleepBreakdown records={whoopSleepRecords} />
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {whoopWorkoutsData && whoopWorkoutsData.workouts.length > 0 && (
-                    <div className="mt-4">
-                      <WhoopActivitiesLog workouts={whoopWorkoutsData.workouts} />
-                    </div>
-                  )}
-                </DashSection>
-              )}
+              </div>
 
             </div>
           </>
         )}
       </div>
-
-      <ChatPanel
-        summary={summary}
-        readiness={readiness}
-        plateaus={plateaus}
-        balance={balance}
-        nutritionSummary={nutritionSummary}
-        profileSummary={profileSummary}
-        whoopSummary={whoopSummary}
-      />
     </main>
   );
 }

@@ -6,7 +6,10 @@ import { useUnits } from '@/lib/units';
 
 const LINKS = [
   { href: '/', label: 'Dashboard' },
+  { href: '/training', label: 'Training' },
+  { href: '/recovery', label: 'Recovery' },
   { href: '/nutrition', label: 'Nutrition' },
+  { href: '/coach', label: 'Coach' },
   { href: '/profile', label: 'Profile' },
 ];
 
