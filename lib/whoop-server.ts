@@ -1,11 +1,11 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { unstable_cache } from 'next/cache';
 import {
   WhoopTokens,
   WhoopRecovery,
   WhoopWorkout,
   WhoopSleep,
+  WhoopCycle,
   STRENGTH_SPORT_IDS,
   refreshAccessToken,
   whoopFetchAll,
@@ -60,19 +60,21 @@ export async function getValidToken(): Promise<string | null> {
     return refreshed.access_token;
   } catch (err) {
     console.error('[whoop] Token refresh failed:', err);
-    // Don't delete tokens on transient errors — let caller handle null
     return null;
   }
 }
 
 // ─── Data Fetchers ───────────────────────────────────────────────────────────
+// No caching — always fetch fresh. unstable_cache was caching null at startup
+// before the token existed, causing data to never appear. For a personal
+// dashboard, live API calls are correct.
 
 export interface WhoopRecoveryData {
-  today: WhoopRecovery | null;       // most recent scored recovery
-  recent: WhoopRecovery[];           // last 30 days
+  today: WhoopRecovery | null;
+  recent: WhoopRecovery[];
 }
 
-async function _fetchWhoopRecovery(): Promise<WhoopRecoveryData | null> {
+export async function getCachedWhoopRecovery(): Promise<WhoopRecoveryData | null> {
   const token = await getValidToken();
   if (!token) return null;
 
@@ -84,16 +86,10 @@ async function _fetchWhoopRecovery(): Promise<WhoopRecoveryData | null> {
     const records = await whoopFetchAll<WhoopRecovery>(
       '/v2/recovery',
       token,
-      {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      },
+      { start: start.toISOString(), end: end.toISOString() },
     );
 
-    // Sort ascending by created_at so most recent is last
     records.sort((a, b) => a.created_at.localeCompare(b.created_at));
-
-    // Most recent scored recovery
     const scored = [...records].reverse().find((r) => r.score_state === 'SCORED' && r.score);
 
     return { today: scored ?? null, recent: records };
@@ -103,17 +99,11 @@ async function _fetchWhoopRecovery(): Promise<WhoopRecoveryData | null> {
   }
 }
 
-export const getCachedWhoopRecovery = unstable_cache(
-  _fetchWhoopRecovery,
-  ['whoop-recovery'],
-  { revalidate: 1800, tags: ['whoop-recovery'] },
-);
-
 export interface WhoopWorkoutData {
   workouts: WhoopWorkout[];
 }
 
-async function _fetchWhoopWorkouts(days = 90): Promise<WhoopWorkoutData | null> {
+export async function getCachedWhoopWorkouts(days = 90): Promise<WhoopWorkoutData | null> {
   const token = await getValidToken();
   if (!token) return null;
 
@@ -125,10 +115,7 @@ async function _fetchWhoopWorkouts(days = 90): Promise<WhoopWorkoutData | null> 
     const workouts = await whoopFetchAll<WhoopWorkout>(
       '/v2/activity/workout',
       token,
-      {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      },
+      { start: start.toISOString(), end: end.toISOString() },
     );
     return { workouts };
   } catch (err) {
@@ -137,13 +124,7 @@ async function _fetchWhoopWorkouts(days = 90): Promise<WhoopWorkoutData | null> 
   }
 }
 
-export const getCachedWhoopWorkouts = unstable_cache(
-  _fetchWhoopWorkouts,
-  ['whoop-workouts'],
-  { revalidate: 3600, tags: ['whoop-workouts'] },
-);
-
-async function _fetchWhoopSleep(days = 30): Promise<WhoopSleep[]> {
+export async function getCachedWhoopSleep(days = 30): Promise<WhoopSleep[]> {
   const token = await getValidToken();
   if (!token) return [];
 
@@ -155,10 +136,7 @@ async function _fetchWhoopSleep(days = 30): Promise<WhoopSleep[]> {
     return await whoopFetchAll<WhoopSleep>(
       '/v2/activity/sleep',
       token,
-      {
-        start: start.toISOString(),
-        end: end.toISOString(),
-      },
+      { start: start.toISOString(), end: end.toISOString() },
     );
   } catch (err) {
     console.error('[whoop] Failed to fetch sleep:', err);
@@ -166,11 +144,25 @@ async function _fetchWhoopSleep(days = 30): Promise<WhoopSleep[]> {
   }
 }
 
-export const getCachedWhoopSleep = unstable_cache(
-  _fetchWhoopSleep,
-  ['whoop-sleep'],
-  { revalidate: 1800, tags: ['whoop-sleep'] },
-);
+export async function getCachedWhoopCycles(days = 30): Promise<WhoopCycle[]> {
+  const token = await getValidToken();
+  if (!token) return [];
+
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(end.getDate() - days);
+
+  try {
+    return await whoopFetchAll<WhoopCycle>(
+      '/v2/cycle',
+      token,
+      { start: start.toISOString(), end: end.toISOString() },
+    );
+  } catch (err) {
+    console.error('[whoop] Failed to fetch cycles:', err);
+    return [];
+  }
+}
 
 // ─── Deduplication ──────────────────────────────────────────────────────────
 
@@ -228,7 +220,7 @@ export function deduplicateAndEnrich(
         avg_heart_rate: s.average_heart_rate,
         max_heart_rate: s.max_heart_rate,
         kilojoule: s.kilojoule,
-        zone_duration: s.zone_duration,
+        zone_durations: s.zone_durations,
       },
     };
   });
@@ -249,7 +241,6 @@ export function summarizeWhoopRecovery(data: WhoopRecoveryData): string {
     lines.push('- Today: Recovery pending (check Whoop app)');
   }
 
-  // 7-day HRV average from scored records
   const scored = data.recent.filter((r) => r.score_state === 'SCORED' && r.score);
   const last7 = scored.slice(-7);
   if (last7.length >= 3) {
@@ -259,7 +250,6 @@ export function summarizeWhoopRecovery(data: WhoopRecoveryData): string {
       `- 7-day avg HRV: ${avgHrv.toFixed(1)}ms | 7-day avg RHR: ${avgRhr.toFixed(1)}bpm`,
     );
 
-    // HRV trend (simple: compare first half vs second half of last 7)
     if (last7.length >= 4) {
       const mid = Math.floor(last7.length / 2);
       const early = last7.slice(0, mid).map((r) => r.score!.hrv_rmssd_milli);
@@ -273,7 +263,6 @@ export function summarizeWhoopRecovery(data: WhoopRecoveryData): string {
     }
   }
 
-  // Low recovery days in last 7
   const lowRecovery = last7.filter((r) => r.score && r.score.recovery_score < 34);
   if (lowRecovery.length > 0) {
     lines.push(`- Low recovery days (last 7d): ${lowRecovery.length} (score < 34)`);

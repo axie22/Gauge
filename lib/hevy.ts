@@ -161,7 +161,7 @@ export interface WhoopBiometrics {
   avg_heart_rate: number;   // bpm
   max_heart_rate: number;   // bpm
   kilojoule: number;
-  zone_duration: {
+  zone_durations: {
     zone_zero_milli: number;
     zone_one_milli: number;
     zone_two_milli: number;

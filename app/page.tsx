@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { getCachedWorkouts, getCachedTemplates, buildTemplateMap, enrichWorkouts } from '@/lib/hevy';
 import {
   calculateAcwr,
@@ -31,7 +33,8 @@ import { ChatPanel } from '@/components/ChatPanel';
 import { WhoopRecoveryCard } from '@/components/WhoopRecoveryCard';
 import { WhoopRecoveryTrend } from '@/components/WhoopRecoveryTrend';
 import { WhoopSleepBreakdown } from '@/components/WhoopSleepBreakdown';
-import { getCachedWhoopRecovery, getCachedWhoopWorkouts, getCachedWhoopSleep, deduplicateAndEnrich, summarizeWhoopRecovery } from '@/lib/whoop-server';
+import { getCachedWhoopRecovery, getCachedWhoopWorkouts, getCachedWhoopSleep, getCachedWhoopCycles, deduplicateAndEnrich, summarizeWhoopRecovery } from '@/lib/whoop-server';
+import { WhoopActivitiesLog } from '@/components/WhoopActivitiesLog';
 
 function DashSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -77,12 +80,13 @@ export default async function DashboardPage() {
   const overload          = computeOverloadSuggestions(workouts);
   const oneRMSeries       = computeOneRMSeries(workouts);
   const consistency       = computeConsistencyScore(workouts);
-  const [nutritionLog, profile, whoopRecovery, whoopWorkoutsData, whoopSleepRecords] = await Promise.all([
+  const [nutritionLog, profile, whoopRecovery, whoopWorkoutsData, whoopSleepRecords, whoopCycles] = await Promise.all([
     readNutritionLogServer(),
     readProfileServer(),
     getCachedWhoopRecovery(),
     getCachedWhoopWorkouts(),
     getCachedWhoopSleep(),
+    getCachedWhoopCycles(),
   ]);
 
   // Enrich Hevy workouts with Whoop biometrics where sessions overlap in time
@@ -272,17 +276,26 @@ export default async function DashboardPage() {
                 <NutritionDashboardWidget />
               </DashSection>
 
-              {whoopRecovery && (
+              {(whoopRecovery || whoopWorkoutsData) && (
                 <DashSection label="Biometrics">
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <WhoopRecoveryCard data={whoopRecovery} />
-                    <div className="lg:col-span-2">
-                      <WhoopRecoveryTrend data={whoopRecovery} />
-                    </div>
-                  </div>
-                  {whoopSleepRecords.length > 0 && (
+                  {whoopRecovery && (
+                    <>
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        <WhoopRecoveryCard data={whoopRecovery} />
+                        <div className="lg:col-span-2">
+                          <WhoopRecoveryTrend data={whoopRecovery} />
+                        </div>
+                      </div>
+                      {whoopSleepRecords.length > 0 && (
+                        <div className="mt-4">
+                          <WhoopSleepBreakdown records={whoopSleepRecords} />
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {whoopWorkoutsData && whoopWorkoutsData.workouts.length > 0 && (
                     <div className="mt-4">
-                      <WhoopSleepBreakdown records={whoopSleepRecords} />
+                      <WhoopActivitiesLog workouts={whoopWorkoutsData.workouts} />
                     </div>
                   )}
                 </DashSection>

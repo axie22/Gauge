@@ -101,13 +101,13 @@ function WorkoutDetail({
           {w.whoop_biometrics && (() => {
             const b = w.whoop_biometrics!;
             const kcal = Math.round(b.kilojoule * 0.239);
-            const totalZoneMs = Object.values(b.zone_duration).reduce((s, v) => s + v, 0);
+            const totalZoneMs = Object.values(b.zone_durations).reduce((s, v) => s + v, 0);
             const zones = [
-              { ms: b.zone_duration.zone_one_milli,   color: '#3b82f6' },
-              { ms: b.zone_duration.zone_two_milli,   color: 'var(--green)' },
-              { ms: b.zone_duration.zone_three_milli, color: 'var(--amber)' },
-              { ms: b.zone_duration.zone_four_milli,  color: '#f97316' },
-              { ms: b.zone_duration.zone_five_milli,  color: 'var(--red)' },
+              { ms: b.zone_durations.zone_one_milli,   color: '#3b82f6' },
+              { ms: b.zone_durations.zone_two_milli,   color: 'var(--green)' },
+              { ms: b.zone_durations.zone_three_milli, color: 'var(--amber)' },
+              { ms: b.zone_durations.zone_four_milli,  color: '#f97316' },
+              { ms: b.zone_durations.zone_five_milli,  color: 'var(--red)' },
             ].filter((z) => z.ms > 0);
             const strainColor =
               b.strain >= 18 ? 'var(--red)' :

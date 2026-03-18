@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { exchangeCodeForTokens } from '@/lib/whoop';
 import { writeTokens } from '@/lib/whoop-server';
 
@@ -37,6 +38,11 @@ export async function GET(req: NextRequest) {
   try {
     const tokens = await exchangeCodeForTokens(code, redirectUri);
     await writeTokens(tokens);
+    // Bust stale null caches from before the token existed
+    revalidateTag('whoop-recovery', 'max');
+    revalidateTag('whoop-workouts', 'max');
+    revalidateTag('whoop-sleep', 'max');
+    revalidateTag('whoop-cycles', 'max');
     return NextResponse.redirect(new URL('/profile?whoop=connected', req.url));
   } catch (err) {
     console.error('[whoop] Callback token exchange failed:', err);

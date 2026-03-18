@@ -1,7 +1,7 @@
 // Whoop API v2 client
 // Base URL for all v2 developer endpoints
 
-const WHOOP_BASE = 'https://api.prod.whoop.com/developer';
+export const WHOOP_BASE = 'https://api.prod.whoop.com/developer';
 const TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
 const AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
 
@@ -58,7 +58,7 @@ export interface WhoopWorkoutScore {
   distance_meter: number | null;
   altitude_gain_meter: number | null;
   altitude_change_meter: number | null;
-  zone_duration: {
+  zone_durations: {
     zone_zero_milli: number;
     zone_one_milli: number;
     zone_two_milli: number;
@@ -77,6 +77,7 @@ export interface WhoopWorkout {
   end: string;    // ISO 8601
   timezone_offset: string;
   sport_id: number;
+  sport_name: string;
   score_state: 'SCORED' | 'PENDING_SCORE' | 'UNSCORABLE';
   score: WhoopWorkoutScore | null;
 }
